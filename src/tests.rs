@@ -302,8 +302,8 @@ fn filter_entry(a: &DirEntry, filter: Option<&OsString>) -> bool {
 fn reftest_main() {
     let mut cases = Vec::new();
     let filter = env::var_os("TEST_FILTER");
-    for entry in fs::read_dir("reftests").expect("listing reftests/") {
-        let entry = entry.expect("failed to read reftests/ entry");
+    for entry in fs::read_dir("test/reftests").expect("listing test/reftests/") {
+        let entry = entry.expect("failed to read test/reftests/ entry");
         if !filter_entry(&entry, filter.as_ref()) {
             continue;
         }

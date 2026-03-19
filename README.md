@@ -25,19 +25,14 @@ Dual-licenced under Apache 2.0 or MIT licenses (see `LICENSE-APACHE` and `LICENS
 
 ## Development
 
-A number of external tools are used during development:
+The parser implementation lives in `src/parser.rs` and is maintained directly in Rust.
+There is no external PEG generation step in the build anymore.
 
-- GNU make
-- rustfmt
-- [rust-peg](https://github.com/kevinmehall/rust-peg) 0.5.4
+The reference fixtures live under `test/reftests/`.
 
-Parser (`src/parser.rs`) is built from a PEG grammar in `grammar.rustpeg`. It is updated manually and then 
-committed, not generated on every build, thus no `rust-peg` in the list of dependencies.
+The makefile mirrors the normal Cargo flow:
 
-For debugging purposes, it is handy to have a version rust-peg built with tracing enabled.
-
-A makefile is used to script the development process:
-
-- `make` update parser, build the library and run the tests;
-- `make trace` rebuilds parser using `rust-peg-trace`, which is expected to be a version of `rust-peg` command with `trace` feature enabled
-- `make check` can be used as pre-commit git hook to make sure parser is up to date
+- `make` runs the full test suite
+- `make lib` builds the library
+- `make test` runs all tests
+- `make check` aliases to `make test`
