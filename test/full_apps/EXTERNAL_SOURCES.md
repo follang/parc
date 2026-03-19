@@ -31,6 +31,22 @@ This file records the upstream provenance for vendored external fixtures under
     `alltypes.h.in` inputs by replacing musl's generation macros with ordinary C
     declarations.
 
+### zlib public header set
+
+- Project: zlib
+- Upstream: https://github.com/madler/zlib
+- Version: `v1.3.1`
+- License: Zlib
+- Local license file: `test/full_apps/licenses/zlib-License.txt`
+- Source files:
+  - `zlib.h`
+  - `zconf.h`
+  - `LICENSE`
+- Local transformation:
+  - Added a local `main.c` wrapper translation unit that includes `zlib.h` and
+    exercises representative public API types without modifying the vendored
+    headers.
+
 ### Candidate future fixtures
 
 - zlib `v1.3.1`

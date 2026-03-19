@@ -27,6 +27,7 @@ fn refresh_script_is_present() {
 fn refresh_script_lists_known_fixtures() {
     let output = run_script(&["list"]);
     assert!(output.lines().any(|line| line == "musl-stdint"));
+    assert!(output.lines().any(|line| line == "zlib-header"));
 }
 
 #[test]
@@ -39,6 +40,15 @@ fn refresh_script_shows_fixture_metadata() {
 }
 
 #[test]
+fn refresh_script_shows_zlib_fixture_metadata() {
+    let output = run_script(&["show", "zlib-header"]);
+    assert!(output.contains("fixture=zlib-header"));
+    assert!(output.contains("project=zlib"));
+    assert!(output.contains("version=v1.3.1"));
+    assert!(output.contains("target=test/full_apps/external/zlib/header"));
+}
+
+#[test]
 fn musl_license_note_is_pinned() {
     let path = Path::new("test/full_apps/licenses/musl-MIT.txt");
     assert!(path.is_file());
@@ -47,4 +57,15 @@ fn musl_license_note_is_pinned() {
     let content = str::from_utf8(&content).expect("license utf-8");
     assert!(content.contains("Permission is hereby granted, free of charge"));
     assert!(content.contains("THE SOFTWARE IS PROVIDED \"AS IS\""));
+}
+
+#[test]
+fn zlib_license_note_is_pinned() {
+    let path = Path::new("test/full_apps/licenses/zlib-License.txt");
+    assert!(path.is_file());
+
+    let content = fs::read(path).expect("reading zlib license file");
+    let content = str::from_utf8(&content).expect("license utf-8");
+    assert!(content.contains("This software is provided 'as-is'"));
+    assert!(content.contains("Permission is granted to anyone to use this software"));
 }
