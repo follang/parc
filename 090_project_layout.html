@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>AST Model - PAC Reference</title>
+        <title>Project Layout - PAC Reference</title>
 
 
         <!-- Custom HTML head -->
@@ -174,183 +174,88 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="ast-model"><a class="header" href="#ast-model">AST Model</a></h1>
-<p>The <code>ast</code> module contains the syntax tree PAC produces after parsing. Most types track the C11
-grammar closely, with additional variants for supported GNU and Clang extensions.</p>
-<h2 id="core-wrapper-types"><a class="header" href="#core-wrapper-types">Core wrapper types</a></h2>
-<p>Many parsed values are wrapped in <code>Node&lt;T&gt;</code>:</p>
-<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>pub struct Node&lt;T&gt; {
-    pub node: T,
-    pub span: Span,
-}
-<span class="boring">}</span></code></pre>
-<p>That means most interesting values come with a byte range in the parsed source.</p>
-<h2 id="top-level-structure"><a class="header" href="#top-level-structure">Top-level structure</a></h2>
-<p>The root is:</p>
-<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>pub struct TranslationUnit(pub Vec&lt;Node&lt;ExternalDeclaration&gt;&gt;);
-<span class="boring">}</span></code></pre>
-<p>Top-level items are:</p>
-<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>pub enum ExternalDeclaration {
-    Declaration(Node&lt;Declaration&gt;),
-    StaticAssert(Node&lt;StaticAssert&gt;),
-    FunctionDefinition(Node&lt;FunctionDefinition&gt;),
-}
-<span class="boring">}</span></code></pre>
-<p>So a translation unit is a flat list of:</p>
+                        <h1 id="project-layout"><a class="header" href="#project-layout">Project Layout</a></h1>
+<p>This chapter is for contributors and advanced users who want to understand where the parser logic
+lives.</p>
+<h2 id="top-level-crate-layout"><a class="header" href="#top-level-crate-layout">Top-level crate layout</a></h2>
+<p>The repository is organized around a small public API surface and several internal support modules.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Path</th><th>Purpose</th></tr>
+</thead>
+<tbody>
+<tr><td><code>src/lib.rs</code></td><td>Public module exports</td></tr>
+<tr><td><code>src/driver.rs</code></td><td>File-based parsing via external preprocessing</td></tr>
+<tr><td><code>src/parse.rs</code></td><td>Direct fragment parsing API</td></tr>
+<tr><td><code>src/ast/</code></td><td>AST type definitions</td></tr>
+<tr><td><code>src/visit/</code></td><td>Recursive visitor functions and trait</td></tr>
+<tr><td><code>src/parser/</code></td><td>Parser implementation split by grammar area</td></tr>
+<tr><td><code>src/loc.rs</code></td><td>Preprocessor line-marker location mapping</td></tr>
+<tr><td><code>src/span.rs</code></td><td><code>Span</code> and <code>Node&lt;T&gt;</code> wrappers</td></tr>
+<tr><td><code>src/print.rs</code></td><td>AST debug printer</td></tr>
+<tr><td><code>src/tests/</code></td><td>Test harnesses and integration-style parser tests</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="ast-and-visitor-organization"><a class="header" href="#ast-and-visitor-organization">AST and visitor organization</a></h2>
+<p>The AST is split into focused files:</p>
 <ul>
-<li>declarations</li>
-<li>static assertions</li>
-<li>function definitions</li>
+<li><code>src/ast/declarations.rs</code></li>
+<li><code>src/ast/expressions.rs</code></li>
+<li><code>src/ast/statements.rs</code></li>
+<li><code>src/ast/extensions.rs</code></li>
+<li><code>src/ast/lexical.rs</code></li>
 </ul>
-<h2 id="declarations"><a class="header" href="#declarations">Declarations</a></h2>
-<p>Declarations are split into specifiers and declarators:</p>
-<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>pub struct Declaration {
-    pub specifiers: Vec&lt;Node&lt;DeclarationSpecifier&gt;&gt;,
-    pub declarators: Vec&lt;Node&lt;InitDeclarator&gt;&gt;,
-}
-<span class="boring">}</span></code></pre>
-<p>This mirrors C’s real syntax. For example:</p>
-<pre><code class="language-c">static const unsigned long value = 42;
-</code></pre>
-<p>roughly becomes:</p>
+<p>The visitor layer mirrors that structure in <code>src/visit/</code>.</p>
+<p>That symmetry is useful:</p>
 <ul>
-<li>storage class specifier: <code>Static</code></li>
-<li>type qualifier: <code>Const</code></li>
-<li>type specifiers: <code>Unsigned</code>, <code>Long</code></li>
-<li>one declarator with identifier <code>value</code></li>
-<li>initializer expression <code>42</code></li>
+<li>if you add a new AST node, you usually need a matching visitor hook</li>
+<li>if you are looking for traversal behavior, the corresponding file is easy to find</li>
 </ul>
-<h3 id="declarators-are-the-hard-part"><a class="header" href="#declarators-are-the-hard-part">Declarators are the hard part</a></h3>
-<p><code>Declarator</code> separates:</p>
+<h2 id="parser-organization"><a class="header" href="#parser-organization">Parser organization</a></h2>
+<p>The parser implementation is divided by grammar topics instead of one giant file.
+Examples include:</p>
 <ul>
-<li>the name-bearing core (<code>DeclaratorKind</code>)</li>
-<li>derived layers such as pointers, arrays, and functions</li>
-<li>extension nodes</li>
+<li><code>translation_units_and_functions.rs</code></li>
+<li><code>declarations_entry.rs</code></li>
+<li><code>declarators.rs</code></li>
+<li><code>statements_iteration_and_jump.rs</code></li>
+<li><code>casts_and_binary.rs</code></li>
+<li><code>typeof_and_ts18661.rs</code></li>
 </ul>
-<p>That design lets PAC represent C declarators without flattening away their structure.</p>
-<p>Examples:</p>
+<p>That split makes grammar work more localized.</p>
+<h2 id="internal-environment-handling"><a class="header" href="#internal-environment-handling">Internal environment handling</a></h2>
+<p>Parsing depends on <code>Env</code>, which tracks parser state such as known typedef names and enabled syntax
+flavor. The public <code>parse</code> and <code>driver</code> APIs construct the right environment for you.</p>
+<p>This matters because some C parses depend on whether an identifier is currently known as a typedef.</p>
+<h2 id="testing-layout"><a class="header" href="#testing-layout">Testing layout</a></h2>
+<p><code>src/tests/</code> contains:</p>
 <ul>
-<li><code>int *p;</code></li>
-<li><code>int values[16];</code></li>
-<li><code>int (*handler)(int);</code></li>
-<li><code>void f(int x, int y);</code></li>
+<li>API tests</li>
+<li>reftest harnesses</li>
+<li>larger fixture harnesses</li>
+<li>external/system-header related coverage</li>
 </ul>
-<h2 id="expressions"><a class="header" href="#expressions">Expressions</a></h2>
-<p><code>Expression</code> is a large enum covering C expression syntax:</p>
-<ul>
-<li>identifiers</li>
-<li>constants</li>
-<li>string literals</li>
-<li>member access</li>
-<li>calls</li>
-<li>casts</li>
-<li>unary operators</li>
-<li>binary operators</li>
-<li>conditional expressions</li>
-<li>comma expressions</li>
-<li><code>sizeof</code>, <code>_Alignof</code></li>
-<li>GNU statement expressions</li>
-<li><code>offsetof</code> and <code>va_arg</code> expansions</li>
-</ul>
-<p>Examples:</p>
-<pre><code class="language-c">x
-42
-ptr-&gt;field
-f(a, b)
-(int) value
-a + b * c
-cond ? left : right
-({ int t = 1; t + 2; })
-</code></pre>
-<h2 id="statements"><a class="header" href="#statements">Statements</a></h2>
-<p><code>Statement</code> covers:</p>
-<ul>
-<li>labeled statements</li>
-<li>compound blocks</li>
-<li>expression statements</li>
-<li><code>if</code></li>
-<li><code>switch</code></li>
-<li><code>while</code></li>
-<li><code>do while</code></li>
-<li><code>for</code></li>
-<li><code>goto</code></li>
-<li><code>continue</code></li>
-<li><code>break</code></li>
-<li><code>return</code></li>
-<li>GNU asm statements</li>
-</ul>
-<p>Blocks contain <code>BlockItem</code>, which can be:</p>
-<ul>
-<li>a declaration</li>
-<li>a static assertion</li>
-<li>another statement</li>
-</ul>
-<p>That means a compound statement preserves the declaration/statement distinction instead of erasing
-everything into one generic node list.</p>
-<h2 id="types-and-declarator-support"><a class="header" href="#types-and-declarator-support">Types and declarator support</a></h2>
-<p>Important declaration-side types include:</p>
-<ul>
-<li><code>TypeSpecifier</code></li>
-<li><code>TypeQualifier</code></li>
-<li><code>StorageClassSpecifier</code></li>
-<li><code>FunctionSpecifier</code></li>
-<li><code>AlignmentSpecifier</code></li>
-<li><code>TypeName</code></li>
-<li><code>DerivedDeclarator</code></li>
-<li><code>ParameterDeclaration</code></li>
-<li><code>Initializer</code></li>
-<li><code>Designator</code></li>
-</ul>
-<p>This is enough to model:</p>
-<ul>
-<li>pointer chains</li>
-<li>arrays and VLA-like forms</li>
-<li>function parameter lists</li>
-<li>designated initializers</li>
-<li>anonymous and named structs/unions/enums</li>
-<li>typedef names</li>
-<li><code>typeof</code></li>
-</ul>
-<h2 id="extension-nodes"><a class="header" href="#extension-nodes">Extension nodes</a></h2>
-<p>PAC includes explicit AST nodes for extensions instead of hiding them:</p>
-<ul>
-<li><code>Extension::Attribute</code></li>
-<li><code>Extension::AsmLabel</code></li>
-<li><code>Extension::AvailabilityAttribute</code></li>
-<li><code>TypeSpecifier::TypeOf</code></li>
-<li><code>Statement::Asm</code></li>
-<li><code>Expression::Statement</code></li>
-</ul>
-<p>That makes it practical to write tools that either support or reject extension syntax intentionally.</p>
-<h2 id="reading-the-ast-effectively"><a class="header" href="#reading-the-ast-effectively">Reading the AST effectively</a></h2>
-<p>When working with PAC, a useful order is:</p>
+<p>When changing parser behavior, expect to touch both narrow tests and corpus-style fixtures.</p>
+<h2 id="contributor-workflow"><a class="header" href="#contributor-workflow">Contributor workflow</a></h2>
+<p>A good change sequence is:</p>
 <ol>
-<li>Start at <code>TranslationUnit</code></li>
-<li>Split declarations from function definitions</li>
-<li>Inspect declarators carefully for type shape</li>
-<li>Use the visitor API instead of hand-recursing everywhere</li>
-<li>Use <code>Printer</code> to learn unfamiliar subtrees</li>
+<li>reproduce with the smallest possible <code>parse::*</code> input</li>
+<li>add or update a focused test</li>
+<li>inspect the tree with <code>Printer</code></li>
+<li>patch the grammar or AST logic</li>
+<li>run <code>make test</code></li>
 </ol>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="030_parser.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="080_diagnostics_and_printing.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="050_visitor.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
-                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
-                            </a>
 
                         <div style="clear: both"></div>
                     </nav>
@@ -358,13 +263,10 @@ everything into one generic node list.</p>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="030_parser.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="080_diagnostics_and_printing.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="050_visitor.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
-                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
-                    </a>
             </nav>
 
         </div>

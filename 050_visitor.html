@@ -35,10 +35,10 @@
             const path_to_root = "";
             const default_light_theme = "navy";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-88c8a939.js";
+            window.path_to_searchindex_js = "searchindex-33ec1cec.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-06aeb1f8.js"></script>
+        <script src="toc-f5f3aa98.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -175,13 +175,19 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="visitor-pattern"><a class="header" href="#visitor-pattern">Visitor Pattern</a></h1>
-<p>The <code>visit</code> module provides a trait-based visitor for walking the AST.</p>
-<h2 id="usage"><a class="header" href="#usage">Usage</a></h2>
-<p>Implement the <code>Visit</code> trait and override methods for the node types you care about:</p>
+<p>The <code>visit</code> module provides recursive AST traversal. It exposes:</p>
+<ul>
+<li>a <code>Visit&lt;'ast&gt;</code> trait with hook methods</li>
+<li>free functions like <code>visit_expression</code> and <code>visit_function_definition</code> that recurse into children</li>
+</ul>
+<h2 id="the-important-rule"><a class="header" href="#the-important-rule">The important rule</a></h2>
+<p>When you override a method, call the free function from <code>pac::visit</code>, not the trait method on
+<code>self</code>. Calling <code>self.visit_*</code> from inside the override will recurse back into your override.</p>
+<h2 id="count-function-definitions"><a class="header" href="#count-function-definitions">Count function definitions</a></h2>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::visit::Visit;
-use pac::ast::*;
+</span>use pac::{ast, span, visit};
+use pac::visit::Visit;
 
 struct FunctionCounter {
     count: usize,
@@ -190,16 +196,81 @@ struct FunctionCounter {
 impl&lt;'ast&gt; Visit&lt;'ast&gt; for FunctionCounter {
     fn visit_function_definition(
         &amp;mut self,
-        func: &amp;'ast FunctionDefinition,
-        span: &amp;'ast Span,
+        node: &amp;'ast ast::FunctionDefinition,
+        span: &amp;'ast span::Span,
     ) {
         self.count += 1;
-        // call default to continue walking children
-        self.visit_function_definition(func, span);
+        visit::visit_function_definition(self, node, span);
     }
 }
 <span class="boring">}</span></code></pre>
-<p>The default implementation of each <code>visit_*</code> method walks into child nodes, so you only need to override the methods you’re interested in.</p>
+<h2 id="collect-identifiers-from-expressions"><a class="header" href="#collect-identifiers-from-expressions">Collect identifiers from expressions</a></h2>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::{ast, span, visit};
+use pac::visit::Visit;
+
+struct IdentifierCollector {
+    names: Vec&lt;String&gt;,
+}
+
+impl&lt;'ast&gt; Visit&lt;'ast&gt; for IdentifierCollector {
+    fn visit_identifier(&amp;mut self, node: &amp;'ast ast::Identifier, span: &amp;'ast span::Span) {
+        self.names.push(node.name.clone());
+        visit::visit_identifier(self, node, span);
+    }
+}
+<span class="boring">}</span></code></pre>
+<h2 id="use-the-visitor"><a class="header" href="#use-the-visitor">Use the visitor</a></h2>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::driver::{parse, Config};
+use pac::visit::Visit;
+
+let parsed = parse(&amp;Config::default(), "examples/sample.c")?;
+
+let mut counter = FunctionCounter { count: 0 };
+counter.visit_translation_unit(&amp;parsed.unit);
+
+println!("functions: {}", counter.count);
+<span class="boring">Ok::&lt;(), pac::driver::Error&gt;(())
+</span><span class="boring">}</span></code></pre>
+<h2 id="when-to-override-which-method"><a class="header" href="#when-to-override-which-method">When to override which method</a></h2>
+<ul>
+<li>Override <code>visit_translation_unit</code> for whole-file summaries</li>
+<li>Override <code>visit_function_definition</code> for function-level analysis</li>
+<li>Override <code>visit_declaration</code> for declaration inspection</li>
+<li>Override <code>visit_expression</code> for expression-wide checks</li>
+<li>Override narrow hooks like <code>visit_call_expression</code> when you only care about one form</li>
+</ul>
+<h2 id="traversal-style"><a class="header" href="#traversal-style">Traversal style</a></h2>
+<p>Two common styles work well:</p>
+<h3 id="pre-order"><a class="header" href="#pre-order">Pre-order</a></h3>
+<p>Do work before recursing:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>fn visit_expression(&amp;mut self, node: &amp;'ast ast::Expression, span: &amp;'ast span::Span) {
+    self.seen += 1;
+    visit::visit_expression(self, node, span);
+}
+<span class="boring">}</span></code></pre>
+<h3 id="selective-traversal"><a class="header" href="#selective-traversal">Selective traversal</a></h3>
+<p>Only recurse when the node passes a filter:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>fn visit_statement(&amp;mut self, node: &amp;'ast ast::Statement, span: &amp;'ast span::Span) {
+    if matches!(node, ast::Statement::Return(_)) {
+        self.returns += 1;
+    }
+    visit::visit_statement(self, node, span);
+}
+<span class="boring">}</span></code></pre>
+<h2 id="practical-advice"><a class="header" href="#practical-advice">Practical advice</a></h2>
+<ul>
+<li>Start with a broad hook like <code>visit_expression</code> while learning the tree.</li>
+<li>Narrow to specific hooks once you understand the shapes you care about.</li>
+<li>Pair the visitor with <code>Printer</code> when a subtree is unclear.</li>
+</ul>
 
                     </main>
 

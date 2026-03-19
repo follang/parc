@@ -35,10 +35,10 @@
             const path_to_root = "";
             const default_light_theme = "navy";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-88c8a939.js";
+            window.path_to_searchindex_js = "searchindex-33ec1cec.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-06aeb1f8.js"></script>
+        <script src="toc-f5f3aa98.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -175,30 +175,113 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="parser-api"><a class="header" href="#parser-api">Parser API</a></h1>
-<p>The <code>parse</code> module provides direct access to the parser without running the preprocessor.</p>
-<h2 id="usage"><a class="header" href="#usage">Usage</a></h2>
+<p>The <code>parse</code> module exposes direct parsing functions that work on in-memory strings. Unlike
+<code>driver</code>, it does not invoke an external preprocessor.</p>
+<h2 id="available-entry-points"><a class="header" href="#available-entry-points">Available entry points</a></h2>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::parse::translation_unit;
-use pac::driver::Flavor;
-
-let source = "int add(int a, int b);";
-let result = translation_unit(source, Flavor::GnuC11);
+</span>parse::constant(source, flavor)
+parse::expression(source, flavor)
+parse::declaration(source, flavor)
+parse::statement(source, flavor)
+parse::translation_unit(source, flavor)
 <span class="boring">}</span></code></pre>
-<p>This is useful when you have already-preprocessed source or want to parse C fragments directly.</p>
-<h2 id="flavors"><a class="header" href="#flavors">Flavors</a></h2>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>Flavor</th><th>Description</th></tr>
-</thead>
-<tbody>
-<tr><td><code>StdC11</code></td><td>Strict C11 standard</td></tr>
-<tr><td><code>GnuC11</code></td><td>C11 with GNU extensions (<code>__attribute__</code>, <code>typeof</code>, <code>asm</code>, etc.)</td></tr>
-<tr><td><code>ClangC11</code></td><td>C11 with Clang extensions (<code>__block</code>, availability attributes, etc.)</td></tr>
-</tbody>
-</table>
-</div>
+<p>These map to progressively larger grammar fragments.</p>
+<h2 id="return-types"><a class="header" href="#return-types">Return types</a></h2>
+<p>The direct parser returns the same <code>ParseResult&lt;T&gt;</code> shape for every entry point:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>type ParseResult&lt;T&gt; = Result&lt;T, ParseError&gt;;
+<span class="boring">}</span></code></pre>
+<p><code>ParseError</code> contains:</p>
+<ul>
+<li><code>line</code></li>
+<li><code>column</code></li>
+<li><code>offset</code></li>
+<li><code>expected</code></li>
+</ul>
+<p>That makes it well suited for parser tests and editor integrations.</p>
+<h2 id="parse-an-expression"><a class="header" href="#parse-an-expression">Parse an expression</a></h2>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::driver::Flavor;
+use pac::parse;
+
+let expr = parse::expression("value + 1 * scale", Flavor::StdC11)?;
+println!("{:#?}", expr);
+<span class="boring">Ok::&lt;(), pac::parse::ParseError&gt;(())
+</span><span class="boring">}</span></code></pre>
+<p>The return type is <code>Box&lt;Node&lt;Expression&gt;&gt;</code>, so you get both the expression and its span.</p>
+<h2 id="parse-a-declaration"><a class="header" href="#parse-a-declaration">Parse a declaration</a></h2>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::driver::Flavor;
+use pac::parse;
+
+let decl = parse::declaration(
+    "static const unsigned long mask = 0xff;",
+    Flavor::StdC11,
+)?;
+
+println!("{:#?}", decl.node);
+<span class="boring">Ok::&lt;(), pac::parse::ParseError&gt;(())
+</span><span class="boring">}</span></code></pre>
+<p>Declarations are useful when you want to inspect:</p>
+<ul>
+<li>storage class</li>
+<li>type qualifiers</li>
+<li>declarator structure</li>
+<li>initializers</li>
+</ul>
+<h2 id="parse-a-statement"><a class="header" href="#parse-a-statement">Parse a statement</a></h2>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::driver::Flavor;
+use pac::parse;
+
+let stmt = parse::statement(
+    "for (int i = 0; i &lt; 4; i++) total += i;",
+    Flavor::StdC11,
+)?;
+
+println!("{:#?}", stmt.node);
+<span class="boring">Ok::&lt;(), pac::parse::ParseError&gt;(())
+</span><span class="boring">}</span></code></pre>
+<h2 id="parse-a-whole-translation-unit"><a class="header" href="#parse-a-whole-translation-unit">Parse a whole translation unit</a></h2>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::driver::Flavor;
+use pac::parse;
+
+let source = r#"
+typedef int count_t;
+count_t inc(count_t x) { return x + 1; }
+"#;
+
+let unit = parse::translation_unit(source, Flavor::StdC11)?;
+println!("items: {}", unit.0.len());
+<span class="boring">Ok::&lt;(), pac::parse::ParseError&gt;(())
+</span><span class="boring">}</span></code></pre>
+<h2 id="flavor-sensitive-parsing"><a class="header" href="#flavor-sensitive-parsing">Flavor-sensitive parsing</a></h2>
+<p>GNU or Clang syntax only parses when you select a compatible flavor.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::driver::Flavor;
+use pac::parse;
+
+let gnu_expr = "({ int x = 1; x + 2; })";
+assert!(parse::expression(gnu_expr, Flavor::GnuC11).is_ok());
+assert!(parse::expression(gnu_expr, Flavor::StdC11).is_err());
+<span class="boring">}</span></code></pre>
+<h2 id="when-to-prefer-parse"><a class="header" href="#when-to-prefer-parse">When to prefer <code>parse</code></a></h2>
+<p>Use <code>parse</code> when:</p>
+<ul>
+<li>you already have a string in memory</li>
+<li>you are testing grammar behavior directly</li>
+<li>you are parsing snippets, not full files</li>
+<li>you want a deterministic input without shelling out to <code>gcc</code> or <code>clang</code></li>
+</ul>
+<p>Use <code>driver</code> instead when preprocessing is part of the problem.</p>
 
                     </main>
 

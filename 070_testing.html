@@ -35,10 +35,10 @@
             const path_to_root = "";
             const default_light_theme = "navy";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-88c8a939.js";
+            window.path_to_searchindex_js = "searchindex-33ec1cec.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-06aeb1f8.js"></script>
+        <script src="toc-f5f3aa98.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -175,24 +175,98 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="testing"><a class="header" href="#testing">Testing</a></h1>
-<h2 id="test-structure"><a class="header" href="#test-structure">Test structure</a></h2>
+<p>PAC has two broad testing layers:</p>
 <ul>
-<li><code>src/tests/</code> — unit tests for parser internals</li>
-<li><code>test/reftests/</code> — reference test corpus (small C fragments)</li>
-<li><code>test/full_apps/</code> — larger translation-unit fixtures</li>
+<li>direct parser/API tests in <code>src/tests</code></li>
+<li>corpus-style fixtures under <code>test/reftests/</code> and, when present, <code>test/full_apps/</code></li>
 </ul>
-<h2 id="running-tests"><a class="header" href="#running-tests">Running tests</a></h2>
-<pre><code class="language-sh">make build   # build the library
-make test    # run all tests (including ignored/system tests)
+<h2 id="basic-commands"><a class="header" href="#basic-commands">Basic commands</a></h2>
+<p>The repository <code>Makefile</code> wraps the normal Cargo flow:</p>
+<pre><code class="language-sh">make build
+make test
 </code></pre>
+<p>Those run:</p>
+<ul>
+<li><code>cargo build --release</code></li>
+<li><code>cargo test</code></li>
+</ul>
+<h2 id="parse-api-tests"><a class="header" href="#parse-api-tests">Parse API tests</a></h2>
+<p><code>src/tests/parse_api.rs</code> checks the public <code>parse</code> entry points directly.</p>
+<p>Examples covered in the repository include:</p>
+<ul>
+<li>constants</li>
+<li>expressions</li>
+<li>declarations</li>
+<li>statements</li>
+<li>translation units</li>
+</ul>
+<p>This layer is useful when:</p>
+<ul>
+<li>adding a new public parser entry point</li>
+<li>fixing a small grammar regression</li>
+<li>documenting a minimal parsing example</li>
+</ul>
+<h2 id="reference-tests"><a class="header" href="#reference-tests">Reference tests</a></h2>
+<p>The reftest harness in <code>src/tests/reftests.rs</code> reads files from <code>test/reftests/</code>.
+Each case stores:</p>
+<ul>
+<li>the source snippet</li>
+<li>optional <code>#pragma</code> directives that affect parsing</li>
+<li>an expected AST printout between <code>/*===</code> and <code>===*/</code></li>
+</ul>
+<p>That means reftests verify both:</p>
+<ul>
+<li>whether parsing succeeds</li>
+<li>whether the produced tree matches the expected printer output</li>
+</ul>
+<h2 id="reftest-update-workflow"><a class="header" href="#reftest-update-workflow">Reftest update workflow</a></h2>
+<p>The harness supports <code>TEST_UPDATE=1</code> to rewrite expected outputs when printer changes are
+intentional.</p>
+<pre><code class="language-sh">TEST_UPDATE=1 cargo test reftests
+</code></pre>
+<p>Use that carefully. It is appropriate after deliberate AST or printer changes, not as a substitute
+for reviewing diffs.</p>
 <h2 id="full-app-fixtures"><a class="header" href="#full-app-fixtures">Full-app fixtures</a></h2>
-<p>Each fixture has a <code>fixture.toml</code> manifest with fields like <code>mode</code>, <code>flavor</code>, <code>entry</code>, and <code>expected</code>.</p>
-<p>Filter by path or tag:</p>
+<p>The repository includes a full-app harness in <code>src/tests/full_apps.rs</code>. It supports fixture
+directories with a <code>fixture.toml</code> manifest describing:</p>
+<ul>
+<li><code>mode</code></li>
+<li><code>flavor</code></li>
+<li><code>entry</code></li>
+<li><code>expected</code></li>
+<li><code>include_dirs</code></li>
+<li><code>allow_system_includes</code></li>
+<li><code>tags</code></li>
+</ul>
+<p>Supported modes are:</p>
+<ul>
+<li><code>translation_unit</code></li>
+<li><code>driver</code></li>
+<li><code>preprocessed</code></li>
+</ul>
+<p>This is the right layer for:</p>
+<ul>
+<li>multi-file examples</li>
+<li>include-path behavior</li>
+<li>external fixture snapshots</li>
+<li>deterministic <code>.i</code> inputs</li>
+</ul>
+<h2 id="filtering-larger-fixture-runs"><a class="header" href="#filtering-larger-fixture-runs">Filtering larger fixture runs</a></h2>
+<p>The full-app runner supports environment filters:</p>
 <pre><code class="language-sh">FULL_APP_FILTER=musl/stdint make test
 FULL_APP_TAG=synthetic make test
 </code></pre>
-<h2 id="external-fixtures"><a class="header" href="#external-fixtures">External fixtures</a></h2>
-<p>Vendored headers live under <code>test/full_apps/external/</code> with provenance documented in <code>EXTERNAL_SOURCES.md</code> and licenses in <code>test/full_apps/licenses/</code>.</p>
+<p>These are useful when debugging one fixture family instead of running the whole corpus.</p>
+<h2 id="current-workspace-note"><a class="header" href="#current-workspace-note">Current workspace note</a></h2>
+<p>The test harness and README describe <code>test/full_apps</code>, but that directory is not present in this
+workspace snapshot. The book documents the supported format because the code and README do.</p>
+<h2 id="adding-new-tests"><a class="header" href="#adding-new-tests">Adding new tests</a></h2>
+<p>A practical progression is:</p>
+<ol>
+<li>Add a <code>parse_api</code> unit test for the exact regression</li>
+<li>Add a reftest if you need a stable printed-tree expectation</li>
+<li>Add a full-app fixture if preprocessing or multi-file behavior matters</li>
+</ol>
 
                     </main>
 
@@ -202,6 +276,9 @@ FULL_APP_TAG=synthetic make test
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
+                            <a rel="next prefetch" href="080_diagnostics_and_printing.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                            </a>
 
                         <div style="clear: both"></div>
                     </nav>
@@ -213,6 +290,9 @@ FULL_APP_TAG=synthetic make test
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
+                    <a rel="next prefetch" href="080_diagnostics_and_printing.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                    </a>
             </nav>
 
         </div>

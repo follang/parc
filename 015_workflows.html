@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>AST Model - PAC Reference</title>
+        <title>Common Workflows - PAC Reference</title>
 
 
         <!-- Custom HTML head -->
@@ -174,181 +174,143 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="ast-model"><a class="header" href="#ast-model">AST Model</a></h1>
-<p>The <code>ast</code> module contains the syntax tree PAC produces after parsing. Most types track the C11
-grammar closely, with additional variants for supported GNU and Clang extensions.</p>
-<h2 id="core-wrapper-types"><a class="header" href="#core-wrapper-types">Core wrapper types</a></h2>
-<p>Many parsed values are wrapped in <code>Node&lt;T&gt;</code>:</p>
+                        <h1 id="common-workflows"><a class="header" href="#common-workflows">Common Workflows</a></h1>
+<p>Most confusion with PAC comes from choosing the wrong entry point. This chapter maps common tasks to
+the right API.</p>
+<h2 id="workflow-selection"><a class="header" href="#workflow-selection">Workflow selection</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Situation</th><th>API</th></tr>
+</thead>
+<tbody>
+<tr><td>Parse a <code>.c</code> or <code>.h</code> file with includes and macros</td><td><code>driver::parse</code></td></tr>
+<tr><td>Parse already-preprocessed text from memory</td><td><code>driver::parse_preprocessed</code></td></tr>
+<tr><td>Parse one expression, declaration, statement, or translation unit string</td><td><code>parse::*</code></td></tr>
+<tr><td>Walk an AST you already parsed</td><td><code>visit</code></td></tr>
+<tr><td>Print an AST for debugging</td><td><code>print::Printer</code></td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="parse-a-real-file"><a class="header" href="#parse-a-real-file">Parse a real file</a></h2>
+<p>Use this when your source depends on <code>#include</code>, <code>#define</code>, or compiler predefined macros.</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>pub struct Node&lt;T&gt; {
-    pub node: T,
-    pub span: Span,
-}
+</span>use pac::driver::{parse, Config};
+
+let config = Config::default();
+let parsed = parse(&amp;config, "src/main.c")?;
 <span class="boring">}</span></code></pre>
-<p>That means most interesting values come with a byte range in the parsed source.</p>
-<h2 id="top-level-structure"><a class="header" href="#top-level-structure">Top-level structure</a></h2>
-<p>The root is:</p>
+<p>This gives you:</p>
+<ul>
+<li><code>parsed.source</code>: the preprocessed source text</li>
+<li><code>parsed.unit</code>: the AST root</li>
+</ul>
+<h2 id="parse-preprocessed-text"><a class="header" href="#parse-preprocessed-text">Parse preprocessed text</a></h2>
+<p>Use this when another tool already ran preprocessing and you only want PAC to parse.</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>pub struct TranslationUnit(pub Vec&lt;Node&lt;ExternalDeclaration&gt;&gt;);
+</span>use pac::driver::{parse_preprocessed, Config};
+
+let config = Config::default();
+let source = r#"
+<span class="boring">1 "generated.i"
+</span>typedef int count_t;
+count_t answer(void) { return 42; }
+"#
+.to_string();
+
+let parsed = parse_preprocessed(&amp;config, source)?;
 <span class="boring">}</span></code></pre>
-<p>Top-level items are:</p>
+<p>This is useful for:</p>
+<ul>
+<li>snapshot-based tests</li>
+<li>integration with custom build systems</li>
+<li>reproducing parse bugs from stored <code>.i</code> files</li>
+</ul>
+<h2 id="parse-a-fragment"><a class="header" href="#parse-a-fragment">Parse a fragment</a></h2>
+<p>Use <code>pac::parse</code> when you are not dealing with a whole file.</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>pub enum ExternalDeclaration {
-    Declaration(Node&lt;Declaration&gt;),
-    StaticAssert(Node&lt;StaticAssert&gt;),
-    FunctionDefinition(Node&lt;FunctionDefinition&gt;),
-}
+</span>use pac::driver::Flavor;
+use pac::parse;
+
+let expr = parse::expression("ptr-&gt;len + 1", Flavor::GnuC11)?;
+let decl = parse::declaration("unsigned long flags;", Flavor::StdC11)?;
+let stmt = parse::statement("if (ok) return 1;", Flavor::StdC11)?;
 <span class="boring">}</span></code></pre>
-<p>So a translation unit is a flat list of:</p>
+<p>This is the right choice for:</p>
 <ul>
-<li>declarations</li>
-<li>static assertions</li>
-<li>function definitions</li>
+<li>unit tests</li>
+<li>parser experiments</li>
+<li>editor tooling for partial snippets</li>
 </ul>
-<h2 id="declarations"><a class="header" href="#declarations">Declarations</a></h2>
-<p>Declarations are split into specifiers and declarators:</p>
-<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>pub struct Declaration {
-    pub specifiers: Vec&lt;Node&lt;DeclarationSpecifier&gt;&gt;,
-    pub declarators: Vec&lt;Node&lt;InitDeclarator&gt;&gt;,
-}
-<span class="boring">}</span></code></pre>
-<p>This mirrors C’s real syntax. For example:</p>
-<pre><code class="language-c">static const unsigned long value = 42;
-</code></pre>
-<p>roughly becomes:</p>
-<ul>
-<li>storage class specifier: <code>Static</code></li>
-<li>type qualifier: <code>Const</code></li>
-<li>type specifiers: <code>Unsigned</code>, <code>Long</code></li>
-<li>one declarator with identifier <code>value</code></li>
-<li>initializer expression <code>42</code></li>
-</ul>
-<h3 id="declarators-are-the-hard-part"><a class="header" href="#declarators-are-the-hard-part">Declarators are the hard part</a></h3>
-<p><code>Declarator</code> separates:</p>
-<ul>
-<li>the name-bearing core (<code>DeclaratorKind</code>)</li>
-<li>derived layers such as pointers, arrays, and functions</li>
-<li>extension nodes</li>
-</ul>
-<p>That design lets PAC represent C declarators without flattening away their structure.</p>
-<p>Examples:</p>
-<ul>
-<li><code>int *p;</code></li>
-<li><code>int values[16];</code></li>
-<li><code>int (*handler)(int);</code></li>
-<li><code>void f(int x, int y);</code></li>
-</ul>
-<h2 id="expressions"><a class="header" href="#expressions">Expressions</a></h2>
-<p><code>Expression</code> is a large enum covering C expression syntax:</p>
-<ul>
-<li>identifiers</li>
-<li>constants</li>
-<li>string literals</li>
-<li>member access</li>
-<li>calls</li>
-<li>casts</li>
-<li>unary operators</li>
-<li>binary operators</li>
-<li>conditional expressions</li>
-<li>comma expressions</li>
-<li><code>sizeof</code>, <code>_Alignof</code></li>
-<li>GNU statement expressions</li>
-<li><code>offsetof</code> and <code>va_arg</code> expansions</li>
-</ul>
-<p>Examples:</p>
-<pre><code class="language-c">x
-42
-ptr-&gt;field
-f(a, b)
-(int) value
-a + b * c
-cond ? left : right
-({ int t = 1; t + 2; })
-</code></pre>
-<h2 id="statements"><a class="header" href="#statements">Statements</a></h2>
-<p><code>Statement</code> covers:</p>
-<ul>
-<li>labeled statements</li>
-<li>compound blocks</li>
-<li>expression statements</li>
-<li><code>if</code></li>
-<li><code>switch</code></li>
-<li><code>while</code></li>
-<li><code>do while</code></li>
-<li><code>for</code></li>
-<li><code>goto</code></li>
-<li><code>continue</code></li>
-<li><code>break</code></li>
-<li><code>return</code></li>
-<li>GNU asm statements</li>
-</ul>
-<p>Blocks contain <code>BlockItem</code>, which can be:</p>
-<ul>
-<li>a declaration</li>
-<li>a static assertion</li>
-<li>another statement</li>
-</ul>
-<p>That means a compound statement preserves the declaration/statement distinction instead of erasing
-everything into one generic node list.</p>
-<h2 id="types-and-declarator-support"><a class="header" href="#types-and-declarator-support">Types and declarator support</a></h2>
-<p>Important declaration-side types include:</p>
-<ul>
-<li><code>TypeSpecifier</code></li>
-<li><code>TypeQualifier</code></li>
-<li><code>StorageClassSpecifier</code></li>
-<li><code>FunctionSpecifier</code></li>
-<li><code>AlignmentSpecifier</code></li>
-<li><code>TypeName</code></li>
-<li><code>DerivedDeclarator</code></li>
-<li><code>ParameterDeclaration</code></li>
-<li><code>Initializer</code></li>
-<li><code>Designator</code></li>
-</ul>
-<p>This is enough to model:</p>
-<ul>
-<li>pointer chains</li>
-<li>arrays and VLA-like forms</li>
-<li>function parameter lists</li>
-<li>designated initializers</li>
-<li>anonymous and named structs/unions/enums</li>
-<li>typedef names</li>
-<li><code>typeof</code></li>
-</ul>
-<h2 id="extension-nodes"><a class="header" href="#extension-nodes">Extension nodes</a></h2>
-<p>PAC includes explicit AST nodes for extensions instead of hiding them:</p>
-<ul>
-<li><code>Extension::Attribute</code></li>
-<li><code>Extension::AsmLabel</code></li>
-<li><code>Extension::AvailabilityAttribute</code></li>
-<li><code>TypeSpecifier::TypeOf</code></li>
-<li><code>Statement::Asm</code></li>
-<li><code>Expression::Statement</code></li>
-</ul>
-<p>That makes it practical to write tools that either support or reject extension syntax intentionally.</p>
-<h2 id="reading-the-ast-effectively"><a class="header" href="#reading-the-ast-effectively">Reading the AST effectively</a></h2>
-<p>When working with PAC, a useful order is:</p>
+<h2 id="build-an-analyzer"><a class="header" href="#build-an-analyzer">Build an analyzer</a></h2>
+<p>The normal analyzer flow is:</p>
 <ol>
-<li>Start at <code>TranslationUnit</code></li>
-<li>Split declarations from function definitions</li>
-<li>Inspect declarators carefully for type shape</li>
-<li>Use the visitor API instead of hand-recursing everywhere</li>
-<li>Use <code>Printer</code> to learn unfamiliar subtrees</li>
+<li>Parse with <code>driver</code> or <code>parse</code></li>
+<li>Traverse with <code>visit</code></li>
+<li>Use <code>span</code> and <code>loc</code> for diagnostics</li>
 </ol>
+<p>Example outline:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::driver::{parse, Config};
+use pac::visit::{self, Visit};
+use pac::{ast, span};
+
+struct FunctionCounter {
+    count: usize,
+}
+
+impl&lt;'ast&gt; Visit&lt;'ast&gt; for FunctionCounter {
+    fn visit_function_definition(
+        &amp;mut self,
+        node: &amp;'ast ast::FunctionDefinition,
+        span: &amp;'ast span::Span,
+    ) {
+        self.count += 1;
+        visit::visit_function_definition(self, node, span);
+    }
+}
+
+let parsed = parse(&amp;Config::default(), "src/main.c")?;
+let mut counter = FunctionCounter { count: 0 };
+counter.visit_translation_unit(&amp;parsed.unit);
+println!("functions: {}", counter.count);
+<span class="boring">Ok::&lt;(), pac::driver::Error&gt;(())
+</span><span class="boring">}</span></code></pre>
+<h2 id="debug-the-parse-tree"><a class="header" href="#debug-the-parse-tree">Debug the parse tree</a></h2>
+<p>Use the printer when you need a human-readable structural dump:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::driver::{parse, Config};
+use pac::print::Printer;
+use pac::visit::Visit;
+
+let parsed = parse(&amp;Config::default(), "src/main.c")?;
+
+let mut out = String::new();
+Printer::new(&amp;mut out).visit_translation_unit(&amp;parsed.unit);
+println!("{}", out);
+<span class="boring">Ok::&lt;(), pac::driver::Error&gt;(())
+</span><span class="boring">}</span></code></pre>
+<h2 id="rule-of-thumb"><a class="header" href="#rule-of-thumb">Rule of thumb</a></h2>
+<ul>
+<li>If preprocessing matters, start with <code>driver</code>.</li>
+<li>If you already have plain text in memory, start with <code>parse</code>.</li>
+<li>If you need diagnostics tied back to original files, keep the preprocessed source string.</li>
+</ul>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="030_parser.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="010_getting_started.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="050_visitor.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="020_driver.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -358,11 +320,11 @@ everything into one generic node list.</p>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="030_parser.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="010_getting_started.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="050_visitor.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="020_driver.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

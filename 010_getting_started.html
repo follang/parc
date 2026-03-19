@@ -35,10 +35,10 @@
             const path_to_root = "";
             const default_light_theme = "navy";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-88c8a939.js";
+            window.path_to_searchindex_js = "searchindex-33ec1cec.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-06aeb1f8.js"></script>
+        <script src="toc-f5f3aa98.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -175,30 +175,88 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="getting-started"><a class="header" href="#getting-started">Getting Started</a></h1>
-<p>Add PAC as a dependency:</p>
+<h2 id="add-the-crate"><a class="header" href="#add-the-crate">Add the crate</a></h2>
 <pre><code class="language-toml">[dependencies]
 pac = { path = "../pac" }
 </code></pre>
-<h2 id="quick-example"><a class="header" href="#quick-example">Quick example</a></h2>
-<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>use pac::driver::{Config, parse};
+<h2 id="pick-the-right-api-first"><a class="header" href="#pick-the-right-api-first">Pick the right API first</a></h2>
+<p>Use <code>pac::driver</code> when you have a file on disk and want PAC to run a system preprocessor first.</p>
+<pre class="playground"><code class="language-rust">use pac::driver::{parse, Config};
 
-let config = Config::default();
-let result = parse(&amp;config, "example.c").unwrap();
-println!("{:#?}", result.unit);
-<span class="boring">}</span></code></pre>
-<h2 id="choosing-a-compiler-flavor"><a class="header" href="#choosing-a-compiler-flavor">Choosing a compiler flavor</a></h2>
+fn main() -&gt; Result&lt;(), pac::driver::Error&gt; {
+    let config = Config::default();
+    let parsed = parse(&amp;config, "examples/sample.c")?;
+
+    println!("preprocessed bytes: {}", parsed.source.len());
+    println!("top-level items: {}", parsed.unit.0.len());
+    Ok(())
+}</code></pre>
+<p>Use <code>pac::parse</code> when you already have source text in memory and want to parse a fragment directly.</p>
+<pre class="playground"><code class="language-rust">use pac::driver::Flavor;
+use pac::parse;
+
+fn main() {
+    let expr = parse::expression("a + b * 2", Flavor::StdC11).unwrap();
+    println!("{:#?}", expr);
+}</code></pre>
+<h2 id="choose-a-language-flavor"><a class="header" href="#choose-a-language-flavor">Choose a language flavor</a></h2>
+<p>PAC supports three parser modes:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Flavor</th><th>Meaning</th></tr>
+</thead>
+<tbody>
+<tr><td><code>StdC11</code></td><td>Strict C11</td></tr>
+<tr><td><code>GnuC11</code></td><td>C11 plus GNU syntax such as <code>typeof</code>, attributes, statement expressions, and GNU asm</td></tr>
+<tr><td><code>ClangC11</code></td><td>C11 plus Clang-oriented extensions such as availability attributes</td></tr>
+</tbody>
+</table>
+</div>
+<p>For file-based parsing, <code>Config::default()</code> selects:</p>
+<ul>
+<li><code>clang -E</code> on macOS</li>
+<li><code>gcc -E</code> on other targets</li>
+</ul>
+<p>You can also select explicitly:</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>use pac::driver::Config;
 
-// GNU extensions (default on Linux)
-let config = Config::with_gcc();
-
-// Clang extensions (default on macOS)
-let config = Config::with_clang();
+let gnu = Config::with_gcc();
+let clang = Config::with_clang();
 <span class="boring">}</span></code></pre>
+<h2 id="first-useful-example"><a class="header" href="#first-useful-example">First useful example</a></h2>
+<p>This example parses a translation unit and counts top-level entries:</p>
+<pre class="playground"><code class="language-rust">use pac::driver::{parse, Config};
+
+fn main() -&gt; Result&lt;(), pac::driver::Error&gt; {
+    let parsed = parse(&amp;Config::default(), "examples/header.h")?;
+
+    for (i, item) in parsed.unit.0.iter().enumerate() {
+        println!("item #{i}: {:?}", item.node);
+    }
+
+    Ok(())
+}</code></pre>
+<h2 id="first-fragment-example"><a class="header" href="#first-fragment-example">First fragment example</a></h2>
+<p>If you only need one declaration or statement, the direct parser API is faster to wire in:</p>
+<pre class="playground"><code class="language-rust">use pac::driver::Flavor;
+use pac::parse;
+
+fn main() {
+    let decl = parse::declaration("static const int answer = 42;", Flavor::StdC11).unwrap();
+    let stmt = parse::statement("return answer;", Flavor::StdC11).unwrap();
+
+    println!("{:#?}", decl);
+    println!("{:#?}", stmt);
+}</code></pre>
+<h2 id="what-to-read-next"><a class="header" href="#what-to-read-next">What to read next</a></h2>
+<ul>
+<li><a href="./015_workflows.html">Common Workflows</a> for choosing between <code>driver</code>, <code>parse_preprocessed</code>, and <code>parse</code></li>
+<li><a href="./020_driver.html">Driver API</a> for preprocessing and file-based parsing</li>
+<li><a href="./030_parser.html">Parser API</a> for fragment parsing</li>
+</ul>
 
                     </main>
 
@@ -208,7 +266,7 @@ let config = Config::with_clang();
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="020_driver.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="015_workflows.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -222,7 +280,7 @@ let config = Config::with_clang();
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="020_driver.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="015_workflows.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

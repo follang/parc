@@ -35,10 +35,10 @@
             const path_to_root = "";
             const default_light_theme = "navy";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-88c8a939.js";
+            window.path_to_searchindex_js = "searchindex-33ec1cec.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-06aeb1f8.js"></script>
+        <script src="toc-f5f3aa98.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -175,27 +175,72 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="pac-reference"><a class="header" href="#pac-reference">PAC Reference</a></h1>
-<p>PAC (parser c) is a lightweight C parser for Rust. It supports the C11 standard with GNU and Clang extensions.</p>
+<p>PAC is a Rust library for parsing C source into an abstract syntax tree.
+It targets C11 and can optionally accept GNU and Clang extensions.</p>
+<p>At a high level, PAC supports two workflows:</p>
+<ol>
+<li>Parse a real C file through a system preprocessor with [<code>pac::driver</code>].</li>
+<li>Parse already-preprocessed text or individual C fragments with [<code>pac::parse</code>].</li>
+</ol>
+<h2 id="what-pac-gives-you"><a class="header" href="#what-pac-gives-you">What PAC gives you</a></h2>
+<ul>
+<li>A typed AST under <code>pac::ast</code></li>
+<li>Source spans for parsed nodes under <code>pac::span</code></li>
+<li>File and line reconstruction for preprocessed input under <code>pac::loc</code></li>
+<li>A recursive visitor API under <code>pac::visit</code></li>
+<li>A tree-style debug printer under <code>pac::print</code></li>
+</ul>
 <h2 id="pipeline"><a class="header" href="#pipeline">Pipeline</a></h2>
-<pre><code>C source → preprocessor (gcc/clang) → PAC parser → AST
+<p>For file parsing, the normal flow is:</p>
+<pre><code class="language-text">C source file
+  -&gt; system preprocessor (gcc / clang)
+  -&gt; PAC parser
+  -&gt; TranslationUnit AST
 </code></pre>
-<h2 id="modules"><a class="header" href="#modules">Modules</a></h2>
+<p>If you already have preprocessed source, you can skip the external preprocessor and call
+<code>driver::parse_preprocessed</code> or the lower-level functions in <code>parse</code>.</p>
+<h2 id="public-modules"><a class="header" href="#public-modules">Public modules</a></h2>
 <div class="table-wrapper">
 <table>
 <thead>
-<tr><th>Module</th><th>Description</th></tr>
+<tr><th>Module</th><th>Purpose</th></tr>
 </thead>
 <tbody>
-<tr><td><code>driver</code></td><td>High-level API: preprocess and parse in one step</td></tr>
-<tr><td><code>parse</code></td><td>Direct parser: parse already-preprocessed source</td></tr>
-<tr><td><code>ast</code></td><td>Abstract syntax tree types</td></tr>
-<tr><td><code>visit</code></td><td>Visitor trait for AST traversal</td></tr>
-<tr><td><code>loc</code></td><td>Source location tracking</td></tr>
-<tr><td><code>span</code></td><td>Span types for AST nodes</td></tr>
-<tr><td><code>print</code></td><td>AST pretty-printing</td></tr>
+<tr><td><code>driver</code></td><td>High-level API for parsing files via a C preprocessor</td></tr>
+<tr><td><code>parse</code></td><td>Direct parsing of expressions, declarations, statements, and translation units</td></tr>
+<tr><td><code>ast</code></td><td>AST definitions for declarations, expressions, statements, and extensions</td></tr>
+<tr><td><code>visit</code></td><td>Recursive traversal API for AST consumers</td></tr>
+<tr><td><code>span</code></td><td>Byte offsets for parsed nodes</td></tr>
+<tr><td><code>loc</code></td><td>Mapping byte offsets back to source files and lines</td></tr>
+<tr><td><code>print</code></td><td>Debug-oriented tree printer for ASTs</td></tr>
 </tbody>
 </table>
 </div>
+<h2 id="typical-use-cases"><a class="header" href="#typical-use-cases">Typical use cases</a></h2>
+<ul>
+<li>Build a linter or analysis tool for C code</li>
+<li>Inspect declarations in headers after preprocessing</li>
+<li>Parse small fragments in tests</li>
+<li>Prototype refactoring or code-search tools</li>
+<li>Compare parser output across standard, GNU, and Clang flavors</li>
+</ul>
+<h2 id="important-mental-model"><a class="header" href="#important-mental-model">Important mental model</a></h2>
+<p>PAC is a parser, not a full compiler frontend. It gives you syntax and source structure.
+It does not do semantic analysis, type checking, macro expansion itself, or code generation.</p>
+<p>That distinction matters:</p>
+<ul>
+<li>If your input still contains active preprocessor directives or macros, use <code>driver</code>.</li>
+<li>If you want symbol resolution or type inference, you need to build that on top of the AST.</li>
+<li>Node spans point into the parsed input text, which for <code>driver</code> means the preprocessed source.</li>
+</ul>
+<h2 id="where-to-start"><a class="header" href="#where-to-start">Where to start</a></h2>
+<ul>
+<li>Read <a href="./010_getting_started.html">Getting Started</a> for the basic setup</li>
+<li>Read <a href="./015_workflows.html">Common Workflows</a> to choose the right entry point</li>
+<li>Read <a href="./020_driver.html">Driver API</a> or <a href="./030_parser.html">Parser API</a> depending on your input</li>
+<li>Read <a href="./040_ast.html">AST Model</a> before writing analysis code</li>
+<li>Read <a href="./050_visitor.html">Visitor Pattern</a> if you want to walk the tree</li>
+</ul>
 
                     </main>
 

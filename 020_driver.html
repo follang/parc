@@ -35,10 +35,10 @@
             const path_to_root = "";
             const default_light_theme = "navy";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-88c8a939.js";
+            window.path_to_searchindex_js = "searchindex-33ec1cec.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-06aeb1f8.js"></script>
+        <script src="toc-f5f3aa98.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -175,46 +175,145 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="driver-api"><a class="header" href="#driver-api">Driver API</a></h1>
-<p>The <code>driver</code> module provides the high-level interface: preprocess a C file and parse it in one step.</p>
-<h2 id="config"><a class="header" href="#config">Config</a></h2>
+<p>The <code>driver</code> module is the high-level API for file parsing. It runs a system preprocessor, then
+parses the resulting text into a <code>TranslationUnit</code>.</p>
+<h2 id="main-types"><a class="header" href="#main-types">Main types</a></h2>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>pub struct Config {
-    pub cpp_command: String,      // e.g. "gcc"
-    pub cpp_options: Vec&lt;String&gt;, // e.g. ["-E", "-I/usr/include"]
-    pub flavor: Flavor,           // GnuC11, ClangC11, StdC11
+    pub cpp_command: String,
+    pub cpp_options: Vec&lt;String&gt;,
+    pub flavor: Flavor,
+}
+
+pub enum Flavor {
+    StdC11,
+    GnuC11,
+    ClangC11,
+}
+
+pub struct Parse {
+    pub source: String,
+    pub unit: TranslationUnit,
 }
 <span class="boring">}</span></code></pre>
-<h2 id="parsing"><a class="header" href="#parsing">Parsing</a></h2>
+<p>The return value matters:</p>
+<ul>
+<li><code>source</code> is the preprocessed source PAC actually parsed</li>
+<li><code>unit</code> is the AST root</li>
+</ul>
+<h2 id="basic-file-parsing"><a class="header" href="#basic-file-parsing">Basic file parsing</a></h2>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::{Config, parse};
+</span>use pac::driver::{parse, Config};
+
+let config = Config::default();
+let parsed = parse(&amp;config, "examples/demo.c")?;
+
+println!("preprocessed bytes: {}", parsed.source.len());
+println!("top-level nodes: {}", parsed.unit.0.len());
+<span class="boring">Ok::&lt;(), pac::driver::Error&gt;(())
+</span><span class="boring">}</span></code></pre>
+<h2 id="configuring-the-preprocessor"><a class="header" href="#configuring-the-preprocessor">Configuring the preprocessor</a></h2>
+<p>You can override both the preprocessor executable and its arguments.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::driver::{parse, Config, Flavor};
 
 let config = Config {
     cpp_command: "gcc".into(),
-    cpp_options: vec!["-E".into(), "-I/usr/local/include".into()],
-    flavor: pac::driver::Flavor::GnuC11,
+    cpp_options: vec![
+        "-E".into(),
+        "-Iinclude".into(),
+        "-DMODE=2".into(),
+        "-nostdinc".into(),
+    ],
+    flavor: Flavor::GnuC11,
 };
 
-let result = parse(&amp;config, "header.h").unwrap();
-<span class="boring">}</span></code></pre>
-<p>The result contains:</p>
+let parsed = parse(&amp;config, "src/input.c")?;
+<span class="boring">Ok::&lt;(), pac::driver::Error&gt;(())
+</span><span class="boring">}</span></code></pre>
+<p>This is the place to inject:</p>
 <ul>
-<li><code>unit</code>: the parsed <code>TranslationUnit</code> (the AST root)</li>
-<li><code>source</code>: the preprocessed source text</li>
+<li>include directories with <code>-I...</code></li>
+<li>macro definitions with <code>-D...</code></li>
+<li>stricter or more isolated builds with <code>-nostdinc</code></li>
 </ul>
-<h2 id="errors"><a class="header" href="#errors">Errors</a></h2>
-<p><code>parse</code> returns <code>Error</code> with variants:</p>
+<h2 id="gcc-vs-clang-helpers"><a class="header" href="#gcc-vs-clang-helpers">GCC vs Clang helpers</a></h2>
+<p>The convenience constructors also select parser flavor:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::driver::Config;
+
+let gcc = Config::with_gcc();     // gcc -E, GNU flavor
+let clang = Config::with_clang(); // clang -E, Clang flavor
+<span class="boring">}</span></code></pre>
+<p>Use these when you want the parser flavor to match the syntax accepted by the external
+preprocessor.</p>
+<h2 id="parsing-preprocessed-text-directly"><a class="header" href="#parsing-preprocessed-text-directly">Parsing preprocessed text directly</a></h2>
+<p>If you already have <code>.i</code>-style content, skip <code>parse</code> and call <code>parse_preprocessed</code>.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::driver::{parse_preprocessed, Config};
+
+let source = r#"
+<span class="boring">1 "sample.i"
+</span>typedef int count_t;
+count_t next(count_t x) { return x + 1; }
+"#
+.to_string();
+
+let parsed = parse_preprocessed(&amp;Config::default(), source)?;
+println!("{}", parsed.unit.0.len());
+<span class="boring">Ok::&lt;(), pac::driver::SyntaxError&gt;(())
+</span><span class="boring">}</span></code></pre>
+<h2 id="error-model"><a class="header" href="#error-model">Error model</a></h2>
+<p><code>driver::parse</code> returns:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>Result&lt;Parse, pac::driver::Error&gt;
+<span class="boring">}</span></code></pre>
+<p>The error variants are:</p>
 <ul>
-<li><code>PreprocessorError</code> — the C preprocessor failed</li>
-<li><code>SyntaxError</code> — the parser could not process the preprocessed source</li>
+<li><code>PreprocessorError(io::Error)</code> when the external preprocessor fails</li>
+<li><code>SyntaxError(SyntaxError)</code> when preprocessing succeeded but parsing failed</li>
+</ul>
+<h2 id="working-with-syntax-errors"><a class="header" href="#working-with-syntax-errors">Working with syntax errors</a></h2>
+<p><code>SyntaxError</code> includes:</p>
+<ul>
+<li><code>source</code>: the preprocessed source</li>
+<li><code>line</code>, <code>column</code>, <code>offset</code>: the parse failure position in that source</li>
+<li><code>expected</code>: a set of expected tokens</li>
+</ul>
+<p>Example:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::driver::{parse_preprocessed, Config};
+
+let broken = "int main( { return 0; }".to_string();
+match parse_preprocessed(&amp;Config::default(), broken) {
+    Ok(_) =&gt; {}
+    Err(err) =&gt; {
+        eprintln!("parse failed at {}:{}", err.line, err.column);
+        eprintln!("expected: {:?}", err.expected);
+    }
+}
+<span class="boring">}</span></code></pre>
+<p>If the preprocessed source contains line markers, <code>SyntaxError::get_location()</code> can reconstruct the
+original file and include stack.</p>
+<h2 id="practical-advice"><a class="header" href="#practical-advice">Practical advice</a></h2>
+<ul>
+<li>Keep <code>parsed.source</code> if you plan to report errors later.</li>
+<li>Use <code>parse_preprocessed</code> for deterministic regression tests.</li>
+<li>Prefer explicit <code>cpp_options</code> in tools and CI so parse behavior stays reproducible.</li>
 </ul>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="010_getting_started.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="015_workflows.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
@@ -228,7 +327,7 @@ let result = parse(&amp;config, "header.h").unwrap();
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="010_getting_started.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="015_workflows.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 

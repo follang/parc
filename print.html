@@ -36,10 +36,10 @@
             const path_to_root = "";
             const default_light_theme = "navy";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-88c8a939.js";
+            window.path_to_searchindex_js = "searchindex-33ec1cec.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-06aeb1f8.js"></script>
+        <script src="toc-f5f3aa98.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -176,155 +176,241 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="pac-reference"><a class="header" href="#pac-reference">PAC Reference</a></h1>
-<p>PAC (parser c) is a lightweight C parser for Rust. It supports the C11 standard with GNU and Clang extensions.</p>
+<p>PAC is a Rust library for parsing C source into an abstract syntax tree.
+It targets C11 and can optionally accept GNU and Clang extensions.</p>
+<p>At a high level, PAC supports two workflows:</p>
+<ol>
+<li>Parse a real C file through a system preprocessor with [<code>pac::driver</code>].</li>
+<li>Parse already-preprocessed text or individual C fragments with [<code>pac::parse</code>].</li>
+</ol>
+<h2 id="what-pac-gives-you"><a class="header" href="#what-pac-gives-you">What PAC gives you</a></h2>
+<ul>
+<li>A typed AST under <code>pac::ast</code></li>
+<li>Source spans for parsed nodes under <code>pac::span</code></li>
+<li>File and line reconstruction for preprocessed input under <code>pac::loc</code></li>
+<li>A recursive visitor API under <code>pac::visit</code></li>
+<li>A tree-style debug printer under <code>pac::print</code></li>
+</ul>
 <h2 id="pipeline"><a class="header" href="#pipeline">Pipeline</a></h2>
-<pre><code>C source → preprocessor (gcc/clang) → PAC parser → AST
+<p>For file parsing, the normal flow is:</p>
+<pre><code class="language-text">C source file
+  -&gt; system preprocessor (gcc / clang)
+  -&gt; PAC parser
+  -&gt; TranslationUnit AST
 </code></pre>
-<h2 id="modules"><a class="header" href="#modules">Modules</a></h2>
+<p>If you already have preprocessed source, you can skip the external preprocessor and call
+<code>driver::parse_preprocessed</code> or the lower-level functions in <code>parse</code>.</p>
+<h2 id="public-modules"><a class="header" href="#public-modules">Public modules</a></h2>
 <div class="table-wrapper">
 <table>
 <thead>
-<tr><th>Module</th><th>Description</th></tr>
+<tr><th>Module</th><th>Purpose</th></tr>
 </thead>
 <tbody>
-<tr><td><code>driver</code></td><td>High-level API: preprocess and parse in one step</td></tr>
-<tr><td><code>parse</code></td><td>Direct parser: parse already-preprocessed source</td></tr>
-<tr><td><code>ast</code></td><td>Abstract syntax tree types</td></tr>
-<tr><td><code>visit</code></td><td>Visitor trait for AST traversal</td></tr>
-<tr><td><code>loc</code></td><td>Source location tracking</td></tr>
-<tr><td><code>span</code></td><td>Span types for AST nodes</td></tr>
-<tr><td><code>print</code></td><td>AST pretty-printing</td></tr>
+<tr><td><code>driver</code></td><td>High-level API for parsing files via a C preprocessor</td></tr>
+<tr><td><code>parse</code></td><td>Direct parsing of expressions, declarations, statements, and translation units</td></tr>
+<tr><td><code>ast</code></td><td>AST definitions for declarations, expressions, statements, and extensions</td></tr>
+<tr><td><code>visit</code></td><td>Recursive traversal API for AST consumers</td></tr>
+<tr><td><code>span</code></td><td>Byte offsets for parsed nodes</td></tr>
+<tr><td><code>loc</code></td><td>Mapping byte offsets back to source files and lines</td></tr>
+<tr><td><code>print</code></td><td>Debug-oriented tree printer for ASTs</td></tr>
 </tbody>
 </table>
 </div>
+<h2 id="typical-use-cases"><a class="header" href="#typical-use-cases">Typical use cases</a></h2>
+<ul>
+<li>Build a linter or analysis tool for C code</li>
+<li>Inspect declarations in headers after preprocessing</li>
+<li>Parse small fragments in tests</li>
+<li>Prototype refactoring or code-search tools</li>
+<li>Compare parser output across standard, GNU, and Clang flavors</li>
+</ul>
+<h2 id="important-mental-model"><a class="header" href="#important-mental-model">Important mental model</a></h2>
+<p>PAC is a parser, not a full compiler frontend. It gives you syntax and source structure.
+It does not do semantic analysis, type checking, macro expansion itself, or code generation.</p>
+<p>That distinction matters:</p>
+<ul>
+<li>If your input still contains active preprocessor directives or macros, use <code>driver</code>.</li>
+<li>If you want symbol resolution or type inference, you need to build that on top of the AST.</li>
+<li>Node spans point into the parsed input text, which for <code>driver</code> means the preprocessed source.</li>
+</ul>
+<h2 id="where-to-start"><a class="header" href="#where-to-start">Where to start</a></h2>
+<ul>
+<li>Read <a href="#getting-started">Getting Started</a> for the basic setup</li>
+<li>Read <a href="#common-workflows">Common Workflows</a> to choose the right entry point</li>
+<li>Read <a href="#driver-api">Driver API</a> or <a href="#parser-api">Parser API</a> depending on your input</li>
+<li>Read <a href="#ast-model">AST Model</a> before writing analysis code</li>
+<li>Read <a href="#visitor-pattern">Visitor Pattern</a> if you want to walk the tree</li>
+</ul>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="getting-started"><a class="header" href="#getting-started">Getting Started</a></h1>
-<p>Add PAC as a dependency:</p>
+<h2 id="add-the-crate"><a class="header" href="#add-the-crate">Add the crate</a></h2>
 <pre><code class="language-toml">[dependencies]
 pac = { path = "../pac" }
 </code></pre>
-<h2 id="quick-example"><a class="header" href="#quick-example">Quick example</a></h2>
-<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>use pac::driver::{Config, parse};
+<h2 id="pick-the-right-api-first"><a class="header" href="#pick-the-right-api-first">Pick the right API first</a></h2>
+<p>Use <code>pac::driver</code> when you have a file on disk and want PAC to run a system preprocessor first.</p>
+<pre class="playground"><code class="language-rust">use pac::driver::{parse, Config};
 
-let config = Config::default();
-let result = parse(&amp;config, "example.c").unwrap();
-println!("{:#?}", result.unit);
-<span class="boring">}</span></code></pre>
-<h2 id="choosing-a-compiler-flavor"><a class="header" href="#choosing-a-compiler-flavor">Choosing a compiler flavor</a></h2>
+fn main() -&gt; Result&lt;(), pac::driver::Error&gt; {
+    let config = Config::default();
+    let parsed = parse(&amp;config, "examples/sample.c")?;
+
+    println!("preprocessed bytes: {}", parsed.source.len());
+    println!("top-level items: {}", parsed.unit.0.len());
+    Ok(())
+}</code></pre>
+<p>Use <code>pac::parse</code> when you already have source text in memory and want to parse a fragment directly.</p>
+<pre class="playground"><code class="language-rust">use pac::driver::Flavor;
+use pac::parse;
+
+fn main() {
+    let expr = parse::expression("a + b * 2", Flavor::StdC11).unwrap();
+    println!("{:#?}", expr);
+}</code></pre>
+<h2 id="choose-a-language-flavor"><a class="header" href="#choose-a-language-flavor">Choose a language flavor</a></h2>
+<p>PAC supports three parser modes:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Flavor</th><th>Meaning</th></tr>
+</thead>
+<tbody>
+<tr><td><code>StdC11</code></td><td>Strict C11</td></tr>
+<tr><td><code>GnuC11</code></td><td>C11 plus GNU syntax such as <code>typeof</code>, attributes, statement expressions, and GNU asm</td></tr>
+<tr><td><code>ClangC11</code></td><td>C11 plus Clang-oriented extensions such as availability attributes</td></tr>
+</tbody>
+</table>
+</div>
+<p>For file-based parsing, <code>Config::default()</code> selects:</p>
+<ul>
+<li><code>clang -E</code> on macOS</li>
+<li><code>gcc -E</code> on other targets</li>
+</ul>
+<p>You can also select explicitly:</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>use pac::driver::Config;
 
-// GNU extensions (default on Linux)
-let config = Config::with_gcc();
-
-// Clang extensions (default on macOS)
-let config = Config::with_clang();
+let gnu = Config::with_gcc();
+let clang = Config::with_clang();
 <span class="boring">}</span></code></pre>
-<div style="break-before: page; page-break-before: always;"></div>
-<h1 id="driver-api"><a class="header" href="#driver-api">Driver API</a></h1>
-<p>The <code>driver</code> module provides the high-level interface: preprocess a C file and parse it in one step.</p>
-<h2 id="config"><a class="header" href="#config">Config</a></h2>
-<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>pub struct Config {
-    pub cpp_command: String,      // e.g. "gcc"
-    pub cpp_options: Vec&lt;String&gt;, // e.g. ["-E", "-I/usr/include"]
-    pub flavor: Flavor,           // GnuC11, ClangC11, StdC11
-}
-<span class="boring">}</span></code></pre>
-<h2 id="parsing"><a class="header" href="#parsing">Parsing</a></h2>
-<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>use pac::driver::{Config, parse};
+<h2 id="first-useful-example"><a class="header" href="#first-useful-example">First useful example</a></h2>
+<p>This example parses a translation unit and counts top-level entries:</p>
+<pre class="playground"><code class="language-rust">use pac::driver::{parse, Config};
 
-let config = Config {
-    cpp_command: "gcc".into(),
-    cpp_options: vec!["-E".into(), "-I/usr/local/include".into()],
-    flavor: pac::driver::Flavor::GnuC11,
-};
+fn main() -&gt; Result&lt;(), pac::driver::Error&gt; {
+    let parsed = parse(&amp;Config::default(), "examples/header.h")?;
 
-let result = parse(&amp;config, "header.h").unwrap();
-<span class="boring">}</span></code></pre>
-<p>The result contains:</p>
+    for (i, item) in parsed.unit.0.iter().enumerate() {
+        println!("item #{i}: {:?}", item.node);
+    }
+
+    Ok(())
+}</code></pre>
+<h2 id="first-fragment-example"><a class="header" href="#first-fragment-example">First fragment example</a></h2>
+<p>If you only need one declaration or statement, the direct parser API is faster to wire in:</p>
+<pre class="playground"><code class="language-rust">use pac::driver::Flavor;
+use pac::parse;
+
+fn main() {
+    let decl = parse::declaration("static const int answer = 42;", Flavor::StdC11).unwrap();
+    let stmt = parse::statement("return answer;", Flavor::StdC11).unwrap();
+
+    println!("{:#?}", decl);
+    println!("{:#?}", stmt);
+}</code></pre>
+<h2 id="what-to-read-next"><a class="header" href="#what-to-read-next">What to read next</a></h2>
 <ul>
-<li><code>unit</code>: the parsed <code>TranslationUnit</code> (the AST root)</li>
-<li><code>source</code>: the preprocessed source text</li>
-</ul>
-<h2 id="errors"><a class="header" href="#errors">Errors</a></h2>
-<p><code>parse</code> returns <code>Error</code> with variants:</p>
-<ul>
-<li><code>PreprocessorError</code> — the C preprocessor failed</li>
-<li><code>SyntaxError</code> — the parser could not process the preprocessed source</li>
+<li><a href="#common-workflows">Common Workflows</a> for choosing between <code>driver</code>, <code>parse_preprocessed</code>, and <code>parse</code></li>
+<li><a href="#driver-api">Driver API</a> for preprocessing and file-based parsing</li>
+<li><a href="#parser-api">Parser API</a> for fragment parsing</li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div>
-<h1 id="parser-api"><a class="header" href="#parser-api">Parser API</a></h1>
-<p>The <code>parse</code> module provides direct access to the parser without running the preprocessor.</p>
-<h2 id="usage"><a class="header" href="#usage">Usage</a></h2>
-<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>use pac::parse::translation_unit;
-use pac::driver::Flavor;
-
-let source = "int add(int a, int b);";
-let result = translation_unit(source, Flavor::GnuC11);
-<span class="boring">}</span></code></pre>
-<p>This is useful when you have already-preprocessed source or want to parse C fragments directly.</p>
-<h2 id="flavors"><a class="header" href="#flavors">Flavors</a></h2>
+<h1 id="common-workflows"><a class="header" href="#common-workflows">Common Workflows</a></h1>
+<p>Most confusion with PAC comes from choosing the wrong entry point. This chapter maps common tasks to
+the right API.</p>
+<h2 id="workflow-selection"><a class="header" href="#workflow-selection">Workflow selection</a></h2>
 <div class="table-wrapper">
 <table>
 <thead>
-<tr><th>Flavor</th><th>Description</th></tr>
+<tr><th>Situation</th><th>API</th></tr>
 </thead>
 <tbody>
-<tr><td><code>StdC11</code></td><td>Strict C11 standard</td></tr>
-<tr><td><code>GnuC11</code></td><td>C11 with GNU extensions (<code>__attribute__</code>, <code>typeof</code>, <code>asm</code>, etc.)</td></tr>
-<tr><td><code>ClangC11</code></td><td>C11 with Clang extensions (<code>__block</code>, availability attributes, etc.)</td></tr>
+<tr><td>Parse a <code>.c</code> or <code>.h</code> file with includes and macros</td><td><code>driver::parse</code></td></tr>
+<tr><td>Parse already-preprocessed text from memory</td><td><code>driver::parse_preprocessed</code></td></tr>
+<tr><td>Parse one expression, declaration, statement, or translation unit string</td><td><code>parse::*</code></td></tr>
+<tr><td>Walk an AST you already parsed</td><td><code>visit</code></td></tr>
+<tr><td>Print an AST for debugging</td><td><code>print::Printer</code></td></tr>
 </tbody>
 </table>
 </div>
-<div style="break-before: page; page-break-before: always;"></div>
-<h1 id="ast-model"><a class="header" href="#ast-model">AST Model</a></h1>
-<p>The <code>ast</code> module defines the complete C abstract syntax tree.</p>
-<h2 id="top-level"><a class="header" href="#top-level">Top level</a></h2>
-<ul>
-<li><code>TranslationUnit</code> — root node containing a list of <code>ExternalDeclaration</code></li>
-<li><code>ExternalDeclaration</code> — a function definition or declaration</li>
-</ul>
-<h2 id="declarations"><a class="header" href="#declarations">Declarations</a></h2>
-<ul>
-<li><code>Declaration</code> — type specifiers + init declarators</li>
-<li><code>Declarator</code> — names and derived types (pointers, arrays, functions)</li>
-<li><code>TypeSpecifier</code> — <code>Void</code>, <code>Int</code>, <code>Float</code>, <code>Struct</code>, <code>Enum</code>, <code>TypedefName</code>, etc.</li>
-<li><code>TypeQualifier</code> — <code>Const</code>, <code>Volatile</code>, <code>Restrict</code>, <code>Atomic</code></li>
-<li><code>StorageClassSpecifier</code> — <code>Typedef</code>, <code>Extern</code>, <code>Static</code>, <code>Auto</code>, <code>Register</code></li>
-</ul>
-<h2 id="expressions"><a class="header" href="#expressions">Expressions</a></h2>
-<ul>
-<li><code>Expression</code> — full expression tree (binary, unary, cast, call, member access, etc.)</li>
-<li><code>Constant</code> — integer, float, and character literals</li>
-</ul>
-<h2 id="statements"><a class="header" href="#statements">Statements</a></h2>
-<ul>
-<li><code>Statement</code> — compound, if/else, for, while, do-while, switch, return, goto, labeled, asm</li>
-</ul>
-<h2 id="extensions"><a class="header" href="#extensions">Extensions</a></h2>
-<ul>
-<li><code>Attribute</code> — GCC/Clang attributes</li>
-<li><code>AsmStatement</code> — inline assembly</li>
-<li><code>TypeOf</code> — <code>typeof</code> expressions (GNU)</li>
-</ul>
-<div style="break-before: page; page-break-before: always;"></div>
-<h1 id="visitor-pattern"><a class="header" href="#visitor-pattern">Visitor Pattern</a></h1>
-<p>The <code>visit</code> module provides a trait-based visitor for walking the AST.</p>
-<h2 id="usage-1"><a class="header" href="#usage-1">Usage</a></h2>
-<p>Implement the <code>Visit</code> trait and override methods for the node types you care about:</p>
+<h2 id="parse-a-real-file"><a class="header" href="#parse-a-real-file">Parse a real file</a></h2>
+<p>Use this when your source depends on <code>#include</code>, <code>#define</code>, or compiler predefined macros.</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::visit::Visit;
-use pac::ast::*;
+</span>use pac::driver::{parse, Config};
+
+let config = Config::default();
+let parsed = parse(&amp;config, "src/main.c")?;
+<span class="boring">}</span></code></pre>
+<p>This gives you:</p>
+<ul>
+<li><code>parsed.source</code>: the preprocessed source text</li>
+<li><code>parsed.unit</code>: the AST root</li>
+</ul>
+<h2 id="parse-preprocessed-text"><a class="header" href="#parse-preprocessed-text">Parse preprocessed text</a></h2>
+<p>Use this when another tool already ran preprocessing and you only want PAC to parse.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::driver::{parse_preprocessed, Config};
+
+let config = Config::default();
+let source = r#"
+<span class="boring">1 "generated.i"
+</span>typedef int count_t;
+count_t answer(void) { return 42; }
+"#
+.to_string();
+
+let parsed = parse_preprocessed(&amp;config, source)?;
+<span class="boring">}</span></code></pre>
+<p>This is useful for:</p>
+<ul>
+<li>snapshot-based tests</li>
+<li>integration with custom build systems</li>
+<li>reproducing parse bugs from stored <code>.i</code> files</li>
+</ul>
+<h2 id="parse-a-fragment"><a class="header" href="#parse-a-fragment">Parse a fragment</a></h2>
+<p>Use <code>pac::parse</code> when you are not dealing with a whole file.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::driver::Flavor;
+use pac::parse;
+
+let expr = parse::expression("ptr-&gt;len + 1", Flavor::GnuC11)?;
+let decl = parse::declaration("unsigned long flags;", Flavor::StdC11)?;
+let stmt = parse::statement("if (ok) return 1;", Flavor::StdC11)?;
+<span class="boring">}</span></code></pre>
+<p>This is the right choice for:</p>
+<ul>
+<li>unit tests</li>
+<li>parser experiments</li>
+<li>editor tooling for partial snippets</li>
+</ul>
+<h2 id="build-an-analyzer"><a class="header" href="#build-an-analyzer">Build an analyzer</a></h2>
+<p>The normal analyzer flow is:</p>
+<ol>
+<li>Parse with <code>driver</code> or <code>parse</code></li>
+<li>Traverse with <code>visit</code></li>
+<li>Use <code>span</code> and <code>loc</code> for diagnostics</li>
+</ol>
+<p>Example outline:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::driver::{parse, Config};
+use pac::visit::{self, Visit};
+use pac::{ast, span};
 
 struct FunctionCounter {
     count: usize,
@@ -333,46 +419,892 @@ struct FunctionCounter {
 impl&lt;'ast&gt; Visit&lt;'ast&gt; for FunctionCounter {
     fn visit_function_definition(
         &amp;mut self,
-        func: &amp;'ast FunctionDefinition,
-        span: &amp;'ast Span,
+        node: &amp;'ast ast::FunctionDefinition,
+        span: &amp;'ast span::Span,
     ) {
         self.count += 1;
-        // call default to continue walking children
-        self.visit_function_definition(func, span);
+        visit::visit_function_definition(self, node, span);
+    }
+}
+
+let parsed = parse(&amp;Config::default(), "src/main.c")?;
+let mut counter = FunctionCounter { count: 0 };
+counter.visit_translation_unit(&amp;parsed.unit);
+println!("functions: {}", counter.count);
+<span class="boring">Ok::&lt;(), pac::driver::Error&gt;(())
+</span><span class="boring">}</span></code></pre>
+<h2 id="debug-the-parse-tree"><a class="header" href="#debug-the-parse-tree">Debug the parse tree</a></h2>
+<p>Use the printer when you need a human-readable structural dump:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::driver::{parse, Config};
+use pac::print::Printer;
+use pac::visit::Visit;
+
+let parsed = parse(&amp;Config::default(), "src/main.c")?;
+
+let mut out = String::new();
+Printer::new(&amp;mut out).visit_translation_unit(&amp;parsed.unit);
+println!("{}", out);
+<span class="boring">Ok::&lt;(), pac::driver::Error&gt;(())
+</span><span class="boring">}</span></code></pre>
+<h2 id="rule-of-thumb"><a class="header" href="#rule-of-thumb">Rule of thumb</a></h2>
+<ul>
+<li>If preprocessing matters, start with <code>driver</code>.</li>
+<li>If you already have plain text in memory, start with <code>parse</code>.</li>
+<li>If you need diagnostics tied back to original files, keep the preprocessed source string.</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="driver-api"><a class="header" href="#driver-api">Driver API</a></h1>
+<p>The <code>driver</code> module is the high-level API for file parsing. It runs a system preprocessor, then
+parses the resulting text into a <code>TranslationUnit</code>.</p>
+<h2 id="main-types"><a class="header" href="#main-types">Main types</a></h2>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct Config {
+    pub cpp_command: String,
+    pub cpp_options: Vec&lt;String&gt;,
+    pub flavor: Flavor,
+}
+
+pub enum Flavor {
+    StdC11,
+    GnuC11,
+    ClangC11,
+}
+
+pub struct Parse {
+    pub source: String,
+    pub unit: TranslationUnit,
+}
+<span class="boring">}</span></code></pre>
+<p>The return value matters:</p>
+<ul>
+<li><code>source</code> is the preprocessed source PAC actually parsed</li>
+<li><code>unit</code> is the AST root</li>
+</ul>
+<h2 id="basic-file-parsing"><a class="header" href="#basic-file-parsing">Basic file parsing</a></h2>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::driver::{parse, Config};
+
+let config = Config::default();
+let parsed = parse(&amp;config, "examples/demo.c")?;
+
+println!("preprocessed bytes: {}", parsed.source.len());
+println!("top-level nodes: {}", parsed.unit.0.len());
+<span class="boring">Ok::&lt;(), pac::driver::Error&gt;(())
+</span><span class="boring">}</span></code></pre>
+<h2 id="configuring-the-preprocessor"><a class="header" href="#configuring-the-preprocessor">Configuring the preprocessor</a></h2>
+<p>You can override both the preprocessor executable and its arguments.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::driver::{parse, Config, Flavor};
+
+let config = Config {
+    cpp_command: "gcc".into(),
+    cpp_options: vec![
+        "-E".into(),
+        "-Iinclude".into(),
+        "-DMODE=2".into(),
+        "-nostdinc".into(),
+    ],
+    flavor: Flavor::GnuC11,
+};
+
+let parsed = parse(&amp;config, "src/input.c")?;
+<span class="boring">Ok::&lt;(), pac::driver::Error&gt;(())
+</span><span class="boring">}</span></code></pre>
+<p>This is the place to inject:</p>
+<ul>
+<li>include directories with <code>-I...</code></li>
+<li>macro definitions with <code>-D...</code></li>
+<li>stricter or more isolated builds with <code>-nostdinc</code></li>
+</ul>
+<h2 id="gcc-vs-clang-helpers"><a class="header" href="#gcc-vs-clang-helpers">GCC vs Clang helpers</a></h2>
+<p>The convenience constructors also select parser flavor:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::driver::Config;
+
+let gcc = Config::with_gcc();     // gcc -E, GNU flavor
+let clang = Config::with_clang(); // clang -E, Clang flavor
+<span class="boring">}</span></code></pre>
+<p>Use these when you want the parser flavor to match the syntax accepted by the external
+preprocessor.</p>
+<h2 id="parsing-preprocessed-text-directly"><a class="header" href="#parsing-preprocessed-text-directly">Parsing preprocessed text directly</a></h2>
+<p>If you already have <code>.i</code>-style content, skip <code>parse</code> and call <code>parse_preprocessed</code>.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::driver::{parse_preprocessed, Config};
+
+let source = r#"
+<span class="boring">1 "sample.i"
+</span>typedef int count_t;
+count_t next(count_t x) { return x + 1; }
+"#
+.to_string();
+
+let parsed = parse_preprocessed(&amp;Config::default(), source)?;
+println!("{}", parsed.unit.0.len());
+<span class="boring">Ok::&lt;(), pac::driver::SyntaxError&gt;(())
+</span><span class="boring">}</span></code></pre>
+<h2 id="error-model"><a class="header" href="#error-model">Error model</a></h2>
+<p><code>driver::parse</code> returns:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>Result&lt;Parse, pac::driver::Error&gt;
+<span class="boring">}</span></code></pre>
+<p>The error variants are:</p>
+<ul>
+<li><code>PreprocessorError(io::Error)</code> when the external preprocessor fails</li>
+<li><code>SyntaxError(SyntaxError)</code> when preprocessing succeeded but parsing failed</li>
+</ul>
+<h2 id="working-with-syntax-errors"><a class="header" href="#working-with-syntax-errors">Working with syntax errors</a></h2>
+<p><code>SyntaxError</code> includes:</p>
+<ul>
+<li><code>source</code>: the preprocessed source</li>
+<li><code>line</code>, <code>column</code>, <code>offset</code>: the parse failure position in that source</li>
+<li><code>expected</code>: a set of expected tokens</li>
+</ul>
+<p>Example:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::driver::{parse_preprocessed, Config};
+
+let broken = "int main( { return 0; }".to_string();
+match parse_preprocessed(&amp;Config::default(), broken) {
+    Ok(_) =&gt; {}
+    Err(err) =&gt; {
+        eprintln!("parse failed at {}:{}", err.line, err.column);
+        eprintln!("expected: {:?}", err.expected);
     }
 }
 <span class="boring">}</span></code></pre>
-<p>The default implementation of each <code>visit_*</code> method walks into child nodes, so you only need to override the methods you’re interested in.</p>
+<p>If the preprocessed source contains line markers, <code>SyntaxError::get_location()</code> can reconstruct the
+original file and include stack.</p>
+<h2 id="practical-advice"><a class="header" href="#practical-advice">Practical advice</a></h2>
+<ul>
+<li>Keep <code>parsed.source</code> if you plan to report errors later.</li>
+<li>Use <code>parse_preprocessed</code> for deterministic regression tests.</li>
+<li>Prefer explicit <code>cpp_options</code> in tools and CI so parse behavior stays reproducible.</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="parser-api"><a class="header" href="#parser-api">Parser API</a></h1>
+<p>The <code>parse</code> module exposes direct parsing functions that work on in-memory strings. Unlike
+<code>driver</code>, it does not invoke an external preprocessor.</p>
+<h2 id="available-entry-points"><a class="header" href="#available-entry-points">Available entry points</a></h2>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>parse::constant(source, flavor)
+parse::expression(source, flavor)
+parse::declaration(source, flavor)
+parse::statement(source, flavor)
+parse::translation_unit(source, flavor)
+<span class="boring">}</span></code></pre>
+<p>These map to progressively larger grammar fragments.</p>
+<h2 id="return-types"><a class="header" href="#return-types">Return types</a></h2>
+<p>The direct parser returns the same <code>ParseResult&lt;T&gt;</code> shape for every entry point:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>type ParseResult&lt;T&gt; = Result&lt;T, ParseError&gt;;
+<span class="boring">}</span></code></pre>
+<p><code>ParseError</code> contains:</p>
+<ul>
+<li><code>line</code></li>
+<li><code>column</code></li>
+<li><code>offset</code></li>
+<li><code>expected</code></li>
+</ul>
+<p>That makes it well suited for parser tests and editor integrations.</p>
+<h2 id="parse-an-expression"><a class="header" href="#parse-an-expression">Parse an expression</a></h2>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::driver::Flavor;
+use pac::parse;
+
+let expr = parse::expression("value + 1 * scale", Flavor::StdC11)?;
+println!("{:#?}", expr);
+<span class="boring">Ok::&lt;(), pac::parse::ParseError&gt;(())
+</span><span class="boring">}</span></code></pre>
+<p>The return type is <code>Box&lt;Node&lt;Expression&gt;&gt;</code>, so you get both the expression and its span.</p>
+<h2 id="parse-a-declaration"><a class="header" href="#parse-a-declaration">Parse a declaration</a></h2>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::driver::Flavor;
+use pac::parse;
+
+let decl = parse::declaration(
+    "static const unsigned long mask = 0xff;",
+    Flavor::StdC11,
+)?;
+
+println!("{:#?}", decl.node);
+<span class="boring">Ok::&lt;(), pac::parse::ParseError&gt;(())
+</span><span class="boring">}</span></code></pre>
+<p>Declarations are useful when you want to inspect:</p>
+<ul>
+<li>storage class</li>
+<li>type qualifiers</li>
+<li>declarator structure</li>
+<li>initializers</li>
+</ul>
+<h2 id="parse-a-statement"><a class="header" href="#parse-a-statement">Parse a statement</a></h2>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::driver::Flavor;
+use pac::parse;
+
+let stmt = parse::statement(
+    "for (int i = 0; i &lt; 4; i++) total += i;",
+    Flavor::StdC11,
+)?;
+
+println!("{:#?}", stmt.node);
+<span class="boring">Ok::&lt;(), pac::parse::ParseError&gt;(())
+</span><span class="boring">}</span></code></pre>
+<h2 id="parse-a-whole-translation-unit"><a class="header" href="#parse-a-whole-translation-unit">Parse a whole translation unit</a></h2>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::driver::Flavor;
+use pac::parse;
+
+let source = r#"
+typedef int count_t;
+count_t inc(count_t x) { return x + 1; }
+"#;
+
+let unit = parse::translation_unit(source, Flavor::StdC11)?;
+println!("items: {}", unit.0.len());
+<span class="boring">Ok::&lt;(), pac::parse::ParseError&gt;(())
+</span><span class="boring">}</span></code></pre>
+<h2 id="flavor-sensitive-parsing"><a class="header" href="#flavor-sensitive-parsing">Flavor-sensitive parsing</a></h2>
+<p>GNU or Clang syntax only parses when you select a compatible flavor.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::driver::Flavor;
+use pac::parse;
+
+let gnu_expr = "({ int x = 1; x + 2; })";
+assert!(parse::expression(gnu_expr, Flavor::GnuC11).is_ok());
+assert!(parse::expression(gnu_expr, Flavor::StdC11).is_err());
+<span class="boring">}</span></code></pre>
+<h2 id="when-to-prefer-parse"><a class="header" href="#when-to-prefer-parse">When to prefer <code>parse</code></a></h2>
+<p>Use <code>parse</code> when:</p>
+<ul>
+<li>you already have a string in memory</li>
+<li>you are testing grammar behavior directly</li>
+<li>you are parsing snippets, not full files</li>
+<li>you want a deterministic input without shelling out to <code>gcc</code> or <code>clang</code></li>
+</ul>
+<p>Use <code>driver</code> instead when preprocessing is part of the problem.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="ast-model"><a class="header" href="#ast-model">AST Model</a></h1>
+<p>The <code>ast</code> module contains the syntax tree PAC produces after parsing. Most types track the C11
+grammar closely, with additional variants for supported GNU and Clang extensions.</p>
+<h2 id="core-wrapper-types"><a class="header" href="#core-wrapper-types">Core wrapper types</a></h2>
+<p>Many parsed values are wrapped in <code>Node&lt;T&gt;</code>:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct Node&lt;T&gt; {
+    pub node: T,
+    pub span: Span,
+}
+<span class="boring">}</span></code></pre>
+<p>That means most interesting values come with a byte range in the parsed source.</p>
+<h2 id="top-level-structure"><a class="header" href="#top-level-structure">Top-level structure</a></h2>
+<p>The root is:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct TranslationUnit(pub Vec&lt;Node&lt;ExternalDeclaration&gt;&gt;);
+<span class="boring">}</span></code></pre>
+<p>Top-level items are:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub enum ExternalDeclaration {
+    Declaration(Node&lt;Declaration&gt;),
+    StaticAssert(Node&lt;StaticAssert&gt;),
+    FunctionDefinition(Node&lt;FunctionDefinition&gt;),
+}
+<span class="boring">}</span></code></pre>
+<p>So a translation unit is a flat list of:</p>
+<ul>
+<li>declarations</li>
+<li>static assertions</li>
+<li>function definitions</li>
+</ul>
+<h2 id="declarations"><a class="header" href="#declarations">Declarations</a></h2>
+<p>Declarations are split into specifiers and declarators:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct Declaration {
+    pub specifiers: Vec&lt;Node&lt;DeclarationSpecifier&gt;&gt;,
+    pub declarators: Vec&lt;Node&lt;InitDeclarator&gt;&gt;,
+}
+<span class="boring">}</span></code></pre>
+<p>This mirrors C’s real syntax. For example:</p>
+<pre><code class="language-c">static const unsigned long value = 42;
+</code></pre>
+<p>roughly becomes:</p>
+<ul>
+<li>storage class specifier: <code>Static</code></li>
+<li>type qualifier: <code>Const</code></li>
+<li>type specifiers: <code>Unsigned</code>, <code>Long</code></li>
+<li>one declarator with identifier <code>value</code></li>
+<li>initializer expression <code>42</code></li>
+</ul>
+<h3 id="declarators-are-the-hard-part"><a class="header" href="#declarators-are-the-hard-part">Declarators are the hard part</a></h3>
+<p><code>Declarator</code> separates:</p>
+<ul>
+<li>the name-bearing core (<code>DeclaratorKind</code>)</li>
+<li>derived layers such as pointers, arrays, and functions</li>
+<li>extension nodes</li>
+</ul>
+<p>That design lets PAC represent C declarators without flattening away their structure.</p>
+<p>Examples:</p>
+<ul>
+<li><code>int *p;</code></li>
+<li><code>int values[16];</code></li>
+<li><code>int (*handler)(int);</code></li>
+<li><code>void f(int x, int y);</code></li>
+</ul>
+<h2 id="expressions"><a class="header" href="#expressions">Expressions</a></h2>
+<p><code>Expression</code> is a large enum covering C expression syntax:</p>
+<ul>
+<li>identifiers</li>
+<li>constants</li>
+<li>string literals</li>
+<li>member access</li>
+<li>calls</li>
+<li>casts</li>
+<li>unary operators</li>
+<li>binary operators</li>
+<li>conditional expressions</li>
+<li>comma expressions</li>
+<li><code>sizeof</code>, <code>_Alignof</code></li>
+<li>GNU statement expressions</li>
+<li><code>offsetof</code> and <code>va_arg</code> expansions</li>
+</ul>
+<p>Examples:</p>
+<pre><code class="language-c">x
+42
+ptr-&gt;field
+f(a, b)
+(int) value
+a + b * c
+cond ? left : right
+({ int t = 1; t + 2; })
+</code></pre>
+<h2 id="statements"><a class="header" href="#statements">Statements</a></h2>
+<p><code>Statement</code> covers:</p>
+<ul>
+<li>labeled statements</li>
+<li>compound blocks</li>
+<li>expression statements</li>
+<li><code>if</code></li>
+<li><code>switch</code></li>
+<li><code>while</code></li>
+<li><code>do while</code></li>
+<li><code>for</code></li>
+<li><code>goto</code></li>
+<li><code>continue</code></li>
+<li><code>break</code></li>
+<li><code>return</code></li>
+<li>GNU asm statements</li>
+</ul>
+<p>Blocks contain <code>BlockItem</code>, which can be:</p>
+<ul>
+<li>a declaration</li>
+<li>a static assertion</li>
+<li>another statement</li>
+</ul>
+<p>That means a compound statement preserves the declaration/statement distinction instead of erasing
+everything into one generic node list.</p>
+<h2 id="types-and-declarator-support"><a class="header" href="#types-and-declarator-support">Types and declarator support</a></h2>
+<p>Important declaration-side types include:</p>
+<ul>
+<li><code>TypeSpecifier</code></li>
+<li><code>TypeQualifier</code></li>
+<li><code>StorageClassSpecifier</code></li>
+<li><code>FunctionSpecifier</code></li>
+<li><code>AlignmentSpecifier</code></li>
+<li><code>TypeName</code></li>
+<li><code>DerivedDeclarator</code></li>
+<li><code>ParameterDeclaration</code></li>
+<li><code>Initializer</code></li>
+<li><code>Designator</code></li>
+</ul>
+<p>This is enough to model:</p>
+<ul>
+<li>pointer chains</li>
+<li>arrays and VLA-like forms</li>
+<li>function parameter lists</li>
+<li>designated initializers</li>
+<li>anonymous and named structs/unions/enums</li>
+<li>typedef names</li>
+<li><code>typeof</code></li>
+</ul>
+<h2 id="extension-nodes"><a class="header" href="#extension-nodes">Extension nodes</a></h2>
+<p>PAC includes explicit AST nodes for extensions instead of hiding them:</p>
+<ul>
+<li><code>Extension::Attribute</code></li>
+<li><code>Extension::AsmLabel</code></li>
+<li><code>Extension::AvailabilityAttribute</code></li>
+<li><code>TypeSpecifier::TypeOf</code></li>
+<li><code>Statement::Asm</code></li>
+<li><code>Expression::Statement</code></li>
+</ul>
+<p>That makes it practical to write tools that either support or reject extension syntax intentionally.</p>
+<h2 id="reading-the-ast-effectively"><a class="header" href="#reading-the-ast-effectively">Reading the AST effectively</a></h2>
+<p>When working with PAC, a useful order is:</p>
+<ol>
+<li>Start at <code>TranslationUnit</code></li>
+<li>Split declarations from function definitions</li>
+<li>Inspect declarators carefully for type shape</li>
+<li>Use the visitor API instead of hand-recursing everywhere</li>
+<li>Use <code>Printer</code> to learn unfamiliar subtrees</li>
+</ol>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="visitor-pattern"><a class="header" href="#visitor-pattern">Visitor Pattern</a></h1>
+<p>The <code>visit</code> module provides recursive AST traversal. It exposes:</p>
+<ul>
+<li>a <code>Visit&lt;'ast&gt;</code> trait with hook methods</li>
+<li>free functions like <code>visit_expression</code> and <code>visit_function_definition</code> that recurse into children</li>
+</ul>
+<h2 id="the-important-rule"><a class="header" href="#the-important-rule">The important rule</a></h2>
+<p>When you override a method, call the free function from <code>pac::visit</code>, not the trait method on
+<code>self</code>. Calling <code>self.visit_*</code> from inside the override will recurse back into your override.</p>
+<h2 id="count-function-definitions"><a class="header" href="#count-function-definitions">Count function definitions</a></h2>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::{ast, span, visit};
+use pac::visit::Visit;
+
+struct FunctionCounter {
+    count: usize,
+}
+
+impl&lt;'ast&gt; Visit&lt;'ast&gt; for FunctionCounter {
+    fn visit_function_definition(
+        &amp;mut self,
+        node: &amp;'ast ast::FunctionDefinition,
+        span: &amp;'ast span::Span,
+    ) {
+        self.count += 1;
+        visit::visit_function_definition(self, node, span);
+    }
+}
+<span class="boring">}</span></code></pre>
+<h2 id="collect-identifiers-from-expressions"><a class="header" href="#collect-identifiers-from-expressions">Collect identifiers from expressions</a></h2>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::{ast, span, visit};
+use pac::visit::Visit;
+
+struct IdentifierCollector {
+    names: Vec&lt;String&gt;,
+}
+
+impl&lt;'ast&gt; Visit&lt;'ast&gt; for IdentifierCollector {
+    fn visit_identifier(&amp;mut self, node: &amp;'ast ast::Identifier, span: &amp;'ast span::Span) {
+        self.names.push(node.name.clone());
+        visit::visit_identifier(self, node, span);
+    }
+}
+<span class="boring">}</span></code></pre>
+<h2 id="use-the-visitor"><a class="header" href="#use-the-visitor">Use the visitor</a></h2>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::driver::{parse, Config};
+use pac::visit::Visit;
+
+let parsed = parse(&amp;Config::default(), "examples/sample.c")?;
+
+let mut counter = FunctionCounter { count: 0 };
+counter.visit_translation_unit(&amp;parsed.unit);
+
+println!("functions: {}", counter.count);
+<span class="boring">Ok::&lt;(), pac::driver::Error&gt;(())
+</span><span class="boring">}</span></code></pre>
+<h2 id="when-to-override-which-method"><a class="header" href="#when-to-override-which-method">When to override which method</a></h2>
+<ul>
+<li>Override <code>visit_translation_unit</code> for whole-file summaries</li>
+<li>Override <code>visit_function_definition</code> for function-level analysis</li>
+<li>Override <code>visit_declaration</code> for declaration inspection</li>
+<li>Override <code>visit_expression</code> for expression-wide checks</li>
+<li>Override narrow hooks like <code>visit_call_expression</code> when you only care about one form</li>
+</ul>
+<h2 id="traversal-style"><a class="header" href="#traversal-style">Traversal style</a></h2>
+<p>Two common styles work well:</p>
+<h3 id="pre-order"><a class="header" href="#pre-order">Pre-order</a></h3>
+<p>Do work before recursing:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>fn visit_expression(&amp;mut self, node: &amp;'ast ast::Expression, span: &amp;'ast span::Span) {
+    self.seen += 1;
+    visit::visit_expression(self, node, span);
+}
+<span class="boring">}</span></code></pre>
+<h3 id="selective-traversal"><a class="header" href="#selective-traversal">Selective traversal</a></h3>
+<p>Only recurse when the node passes a filter:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>fn visit_statement(&amp;mut self, node: &amp;'ast ast::Statement, span: &amp;'ast span::Span) {
+    if matches!(node, ast::Statement::Return(_)) {
+        self.returns += 1;
+    }
+    visit::visit_statement(self, node, span);
+}
+<span class="boring">}</span></code></pre>
+<h2 id="practical-advice-1"><a class="header" href="#practical-advice-1">Practical advice</a></h2>
+<ul>
+<li>Start with a broad hook like <code>visit_expression</code> while learning the tree.</li>
+<li>Narrow to specific hooks once you understand the shapes you care about.</li>
+<li>Pair the visitor with <code>Printer</code> when a subtree is unclear.</li>
+</ul>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="location-tracking"><a class="header" href="#location-tracking">Location Tracking</a></h1>
-<p>The <code>loc</code> module handles mapping byte offsets in preprocessed source back to original file locations.</p>
-<h2 id="how-it-works"><a class="header" href="#how-it-works">How it works</a></h2>
-<p>The C preprocessor emits line markers of the form:</p>
-<pre><code># linenum "filename" flags
+<p>PAC tracks source positions in two related ways:</p>
+<ul>
+<li><code>Span</code> stores byte offsets into the parsed input</li>
+<li><code>loc</code> maps byte offsets in preprocessed source back to original files and lines</li>
+</ul>
+<h2 id="span"><a class="header" href="#span"><code>Span</code></a></h2>
+<p><code>Span</code> is a byte range:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct Span {
+    pub start: usize,
+    pub end: usize,
+}
+<span class="boring">}</span></code></pre>
+<p>Most AST values are wrapped in <code>Node&lt;T&gt;</code>, which adds a <code>span</code> field:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct Node&lt;T&gt; {
+    pub node: T,
+    pub span: Span,
+}
+<span class="boring">}</span></code></pre>
+<h2 id="what-spans-point-to"><a class="header" href="#what-spans-point-to">What spans point to</a></h2>
+<p>This depends on the API you used:</p>
+<ul>
+<li>with <code>parse::*</code>, spans refer to the string you passed in</li>
+<li>with <code>driver::parse_preprocessed</code>, spans refer to the preprocessed string you passed in</li>
+<li>with <code>driver::parse</code>, spans refer to the preprocessor output stored in <code>Parse::source</code></li>
+</ul>
+<p>That last case is important: spans do not directly point into the original <code>.c</code> file when
+preprocessing has inserted line markers or expanded includes.</p>
+<h2 id="mapping-offsets-back-to-files"><a class="header" href="#mapping-offsets-back-to-files">Mapping offsets back to files</a></h2>
+<p>The <code>loc</code> module reads preprocessor line markers like:</p>
+<pre><code class="language-text"># 42 "include/header.h" 1
 </code></pre>
-<p>PAC parses these markers to build a location map. Given a byte offset in the preprocessed source, <code>get_location_for_offset</code> returns the original file and line number.</p>
-<h2 id="span"><a class="header" href="#span">Span</a></h2>
-<p>Every AST node is wrapped in a <code>Node&lt;T&gt;</code> that carries a <code>Span</code> — a byte range in the preprocessed source. This allows tools (like BIC) to trace declarations back to their origin files.</p>
+<p>From those markers, <code>get_location_for_offset</code> reconstructs:</p>
+<ul>
+<li>the active file</li>
+<li>the active line number</li>
+<li>the include stack</li>
+</ul>
+<h2 id="basic-example"><a class="header" href="#basic-example">Basic example</a></h2>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::loc::get_location_for_offset;
+
+let src = "# 1 \"main.c\"\nint value;\n";
+let (loc, includes) = get_location_for_offset(src, 18);
+
+assert_eq!(loc.file, "main.c");
+assert!(includes.is_empty());
+<span class="boring">}</span></code></pre>
+<h2 id="using-spans-with-locations"><a class="header" href="#using-spans-with-locations">Using spans with locations</a></h2>
+<p>The common pattern is:</p>
+<ol>
+<li>take a node span</li>
+<li>use <code>span.start</code> or <code>span.end</code></li>
+<li>map that offset through <code>loc</code></li>
+</ol>
+<p>Example:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::driver::{parse, Config};
+use pac::loc::get_location_for_offset;
+
+let parsed = parse(&amp;Config::default(), "examples/sample.c")?;
+
+if let Some(first) = parsed.unit.0.first() {
+    let (loc, include_stack) = get_location_for_offset(&amp;parsed.source, first.span.start);
+    println!("first item starts in {}:{}", loc.file, loc.line);
+    println!("include depth: {}", include_stack.len());
+}
+<span class="boring">Ok::&lt;(), pac::driver::Error&gt;(())
+</span><span class="boring">}</span></code></pre>
+<h2 id="syntaxerrorget_location"><a class="header" href="#syntaxerrorget_location"><code>SyntaxError::get_location</code></a></h2>
+<p>For parser failures in the driver path, <code>driver::SyntaxError</code> already exposes:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>err.get_location()
+<span class="boring">}</span></code></pre>
+<p>That returns:</p>
+<ul>
+<li>the active source location</li>
+<li>the include chain that led there</li>
+</ul>
+<p>This is the best starting point for user-facing diagnostics.</p>
+<h2 id="caveat-byte-offsets-not-columns-in-utf-16"><a class="header" href="#caveat-byte-offsets-not-columns-in-utf-16">Caveat: byte offsets, not columns in UTF-16</a></h2>
+<p>PAC stores Rust byte offsets. That is usually what you want for source processing, but if you are
+feeding results into another tool that expects a different coordinate system, convert explicitly.</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="testing"><a class="header" href="#testing">Testing</a></h1>
-<h2 id="test-structure"><a class="header" href="#test-structure">Test structure</a></h2>
+<p>PAC has two broad testing layers:</p>
 <ul>
-<li><code>src/tests/</code> — unit tests for parser internals</li>
-<li><code>test/reftests/</code> — reference test corpus (small C fragments)</li>
-<li><code>test/full_apps/</code> — larger translation-unit fixtures</li>
+<li>direct parser/API tests in <code>src/tests</code></li>
+<li>corpus-style fixtures under <code>test/reftests/</code> and, when present, <code>test/full_apps/</code></li>
 </ul>
-<h2 id="running-tests"><a class="header" href="#running-tests">Running tests</a></h2>
-<pre><code class="language-sh">make build   # build the library
-make test    # run all tests (including ignored/system tests)
+<h2 id="basic-commands"><a class="header" href="#basic-commands">Basic commands</a></h2>
+<p>The repository <code>Makefile</code> wraps the normal Cargo flow:</p>
+<pre><code class="language-sh">make build
+make test
 </code></pre>
+<p>Those run:</p>
+<ul>
+<li><code>cargo build --release</code></li>
+<li><code>cargo test</code></li>
+</ul>
+<h2 id="parse-api-tests"><a class="header" href="#parse-api-tests">Parse API tests</a></h2>
+<p><code>src/tests/parse_api.rs</code> checks the public <code>parse</code> entry points directly.</p>
+<p>Examples covered in the repository include:</p>
+<ul>
+<li>constants</li>
+<li>expressions</li>
+<li>declarations</li>
+<li>statements</li>
+<li>translation units</li>
+</ul>
+<p>This layer is useful when:</p>
+<ul>
+<li>adding a new public parser entry point</li>
+<li>fixing a small grammar regression</li>
+<li>documenting a minimal parsing example</li>
+</ul>
+<h2 id="reference-tests"><a class="header" href="#reference-tests">Reference tests</a></h2>
+<p>The reftest harness in <code>src/tests/reftests.rs</code> reads files from <code>test/reftests/</code>.
+Each case stores:</p>
+<ul>
+<li>the source snippet</li>
+<li>optional <code>#pragma</code> directives that affect parsing</li>
+<li>an expected AST printout between <code>/*===</code> and <code>===*/</code></li>
+</ul>
+<p>That means reftests verify both:</p>
+<ul>
+<li>whether parsing succeeds</li>
+<li>whether the produced tree matches the expected printer output</li>
+</ul>
+<h2 id="reftest-update-workflow"><a class="header" href="#reftest-update-workflow">Reftest update workflow</a></h2>
+<p>The harness supports <code>TEST_UPDATE=1</code> to rewrite expected outputs when printer changes are
+intentional.</p>
+<pre><code class="language-sh">TEST_UPDATE=1 cargo test reftests
+</code></pre>
+<p>Use that carefully. It is appropriate after deliberate AST or printer changes, not as a substitute
+for reviewing diffs.</p>
 <h2 id="full-app-fixtures"><a class="header" href="#full-app-fixtures">Full-app fixtures</a></h2>
-<p>Each fixture has a <code>fixture.toml</code> manifest with fields like <code>mode</code>, <code>flavor</code>, <code>entry</code>, and <code>expected</code>.</p>
-<p>Filter by path or tag:</p>
+<p>The repository includes a full-app harness in <code>src/tests/full_apps.rs</code>. It supports fixture
+directories with a <code>fixture.toml</code> manifest describing:</p>
+<ul>
+<li><code>mode</code></li>
+<li><code>flavor</code></li>
+<li><code>entry</code></li>
+<li><code>expected</code></li>
+<li><code>include_dirs</code></li>
+<li><code>allow_system_includes</code></li>
+<li><code>tags</code></li>
+</ul>
+<p>Supported modes are:</p>
+<ul>
+<li><code>translation_unit</code></li>
+<li><code>driver</code></li>
+<li><code>preprocessed</code></li>
+</ul>
+<p>This is the right layer for:</p>
+<ul>
+<li>multi-file examples</li>
+<li>include-path behavior</li>
+<li>external fixture snapshots</li>
+<li>deterministic <code>.i</code> inputs</li>
+</ul>
+<h2 id="filtering-larger-fixture-runs"><a class="header" href="#filtering-larger-fixture-runs">Filtering larger fixture runs</a></h2>
+<p>The full-app runner supports environment filters:</p>
 <pre><code class="language-sh">FULL_APP_FILTER=musl/stdint make test
 FULL_APP_TAG=synthetic make test
 </code></pre>
-<h2 id="external-fixtures"><a class="header" href="#external-fixtures">External fixtures</a></h2>
-<p>Vendored headers live under <code>test/full_apps/external/</code> with provenance documented in <code>EXTERNAL_SOURCES.md</code> and licenses in <code>test/full_apps/licenses/</code>.</p>
+<p>These are useful when debugging one fixture family instead of running the whole corpus.</p>
+<h2 id="current-workspace-note"><a class="header" href="#current-workspace-note">Current workspace note</a></h2>
+<p>The test harness and README describe <code>test/full_apps</code>, but that directory is not present in this
+workspace snapshot. The book documents the supported format because the code and README do.</p>
+<h2 id="adding-new-tests"><a class="header" href="#adding-new-tests">Adding new tests</a></h2>
+<p>A practical progression is:</p>
+<ol>
+<li>Add a <code>parse_api</code> unit test for the exact regression</li>
+<li>Add a reftest if you need a stable printed-tree expectation</li>
+<li>Add a full-app fixture if preprocessing or multi-file behavior matters</li>
+</ol>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="diagnostics-and-printing"><a class="header" href="#diagnostics-and-printing">Diagnostics And Printing</a></h1>
+<p>PAC includes two pieces that are especially useful when building tools on top of the parser:</p>
+<ul>
+<li>detailed parse errors</li>
+<li>a tree printer for AST inspection</li>
+</ul>
+<h2 id="direct-parser-diagnostics"><a class="header" href="#direct-parser-diagnostics">Direct parser diagnostics</a></h2>
+<p>The <code>parse</code> module returns <code>ParseError</code>:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::driver::Flavor;
+use pac::parse;
+
+match parse::expression("a +", Flavor::StdC11) {
+    Ok(_) =&gt; {}
+    Err(err) =&gt; {
+        eprintln!("line: {}", err.line);
+        eprintln!("column: {}", err.column);
+        eprintln!("offset: {}", err.offset);
+        eprintln!("expected: {:?}", err.expected);
+    }
+}
+<span class="boring">}</span></code></pre>
+<p>This is enough for:</p>
+<ul>
+<li>editor error messages</li>
+<li>parser regression tests</li>
+<li>grammar debugging</li>
+</ul>
+<h2 id="driver-diagnostics"><a class="header" href="#driver-diagnostics">Driver diagnostics</a></h2>
+<p>The driver adds preprocessor context on top:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::driver::{parse, Config, Error};
+
+match parse(&amp;Config::default(), "broken.c") {
+    Ok(_) =&gt; {}
+    Err(Error::PreprocessorError(err)) =&gt; {
+        eprintln!("preprocessor failed: {}", err);
+    }
+    Err(Error::SyntaxError(err)) =&gt; {
+        let (loc, includes) = err.get_location();
+        eprintln!("syntax error in {}:{}:", loc.file, loc.line);
+        eprintln!("column in preprocessed source: {}", err.column);
+        for include in includes {
+            eprintln!("included from {}:{}", include.file, include.line);
+        }
+    }
+}
+<span class="boring">}</span></code></pre>
+<h2 id="formatting-expected-tokens"><a class="header" href="#formatting-expected-tokens">Formatting expected tokens</a></h2>
+<p><code>driver::SyntaxError</code> also has <code>format_expected</code>, which is useful when building a custom
+human-readable error message.</p>
+<h2 id="ast-printing"><a class="header" href="#ast-printing">AST printing</a></h2>
+<p><code>print::Printer</code> is a visitor that renders the tree as an indented text dump.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::driver::{parse, Config};
+use pac::print::Printer;
+use pac::visit::Visit;
+
+let parsed = parse(&amp;Config::default(), "examples/sample.c")?;
+
+let mut out = String::new();
+Printer::new(&amp;mut out).visit_translation_unit(&amp;parsed.unit);
+println!("{}", out);
+<span class="boring">Ok::&lt;(), pac::driver::Error&gt;(())
+</span><span class="boring">}</span></code></pre>
+<p>The printer is ideal when:</p>
+<ul>
+<li>learning how PAC models a syntax form</li>
+<li>updating reftests</li>
+<li>debugging traversal code</li>
+</ul>
+<h2 id="a-practical-debugging-loop"><a class="header" href="#a-practical-debugging-loop">A practical debugging loop</a></h2>
+<p>When a new syntax form is not behaving the way you expect:</p>
+<ol>
+<li>Parse the smallest reproducer with <code>parse::*</code></li>
+<li>Print the AST with <code>Printer</code></li>
+<li>Inspect spans on the nodes you care about</li>
+<li>Switch to <code>driver</code> if preprocessing is involved</li>
+<li>Map spans back to original files with <code>loc</code></li>
+</ol>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="project-layout"><a class="header" href="#project-layout">Project Layout</a></h1>
+<p>This chapter is for contributors and advanced users who want to understand where the parser logic
+lives.</p>
+<h2 id="top-level-crate-layout"><a class="header" href="#top-level-crate-layout">Top-level crate layout</a></h2>
+<p>The repository is organized around a small public API surface and several internal support modules.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Path</th><th>Purpose</th></tr>
+</thead>
+<tbody>
+<tr><td><code>src/lib.rs</code></td><td>Public module exports</td></tr>
+<tr><td><code>src/driver.rs</code></td><td>File-based parsing via external preprocessing</td></tr>
+<tr><td><code>src/parse.rs</code></td><td>Direct fragment parsing API</td></tr>
+<tr><td><code>src/ast/</code></td><td>AST type definitions</td></tr>
+<tr><td><code>src/visit/</code></td><td>Recursive visitor functions and trait</td></tr>
+<tr><td><code>src/parser/</code></td><td>Parser implementation split by grammar area</td></tr>
+<tr><td><code>src/loc.rs</code></td><td>Preprocessor line-marker location mapping</td></tr>
+<tr><td><code>src/span.rs</code></td><td><code>Span</code> and <code>Node&lt;T&gt;</code> wrappers</td></tr>
+<tr><td><code>src/print.rs</code></td><td>AST debug printer</td></tr>
+<tr><td><code>src/tests/</code></td><td>Test harnesses and integration-style parser tests</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="ast-and-visitor-organization"><a class="header" href="#ast-and-visitor-organization">AST and visitor organization</a></h2>
+<p>The AST is split into focused files:</p>
+<ul>
+<li><code>src/ast/declarations.rs</code></li>
+<li><code>src/ast/expressions.rs</code></li>
+<li><code>src/ast/statements.rs</code></li>
+<li><code>src/ast/extensions.rs</code></li>
+<li><code>src/ast/lexical.rs</code></li>
+</ul>
+<p>The visitor layer mirrors that structure in <code>src/visit/</code>.</p>
+<p>That symmetry is useful:</p>
+<ul>
+<li>if you add a new AST node, you usually need a matching visitor hook</li>
+<li>if you are looking for traversal behavior, the corresponding file is easy to find</li>
+</ul>
+<h2 id="parser-organization"><a class="header" href="#parser-organization">Parser organization</a></h2>
+<p>The parser implementation is divided by grammar topics instead of one giant file.
+Examples include:</p>
+<ul>
+<li><code>translation_units_and_functions.rs</code></li>
+<li><code>declarations_entry.rs</code></li>
+<li><code>declarators.rs</code></li>
+<li><code>statements_iteration_and_jump.rs</code></li>
+<li><code>casts_and_binary.rs</code></li>
+<li><code>typeof_and_ts18661.rs</code></li>
+</ul>
+<p>That split makes grammar work more localized.</p>
+<h2 id="internal-environment-handling"><a class="header" href="#internal-environment-handling">Internal environment handling</a></h2>
+<p>Parsing depends on <code>Env</code>, which tracks parser state such as known typedef names and enabled syntax
+flavor. The public <code>parse</code> and <code>driver</code> APIs construct the right environment for you.</p>
+<p>This matters because some C parses depend on whether an identifier is currently known as a typedef.</p>
+<h2 id="testing-layout"><a class="header" href="#testing-layout">Testing layout</a></h2>
+<p><code>src/tests/</code> contains:</p>
+<ul>
+<li>API tests</li>
+<li>reftest harnesses</li>
+<li>larger fixture harnesses</li>
+<li>external/system-header related coverage</li>
+</ul>
+<p>When changing parser behavior, expect to touch both narrow tests and corpus-style fixtures.</p>
+<h2 id="contributor-workflow"><a class="header" href="#contributor-workflow">Contributor workflow</a></h2>
+<p>A good change sequence is:</p>
+<ol>
+<li>reproduce with the smallest possible <code>parse::*</code> input</li>
+<li>add or update a focused test</li>
+<li>inspect the tree with <code>Printer</code></li>
+<li>patch the grammar or AST logic</li>
+<li>run <code>make test</code></li>
+</ol>
 
                     </main>
 
