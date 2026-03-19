@@ -63,6 +63,23 @@ This file records the upstream provenance for vendored external fixtures under
   - The local fixture reuses the vendored zlib public headers and opts into host
     libc headers explicitly via the manifest.
 
+### libpng public header set
+
+- Project: libpng
+- Upstream: https://github.com/pnggroup/libpng
+- Version: `v1.6.43`
+- License: PNG Reference Library License version 2
+- Local license file: `test/full_apps/licenses/libpng-LICENSE.txt`
+- Source files:
+  - `png.h`
+  - `pngconf.h`
+  - `scripts/pnglibconf.h.prebuilt`
+  - `LICENSE`
+- Local transformation:
+  - Added a local `main.c` wrapper translation unit that includes `png.h`,
+    points at the vendored zlib public header directory, and exercises
+    representative public API types.
+
 ### Candidate future fixtures
 
 - zlib `v1.3.1`

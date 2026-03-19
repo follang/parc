@@ -8,9 +8,22 @@ Usage:
   refresh_external_fixture.sh show <fixture>
 
 Known fixtures:
+  libpng-header
   musl-stdint
   zlib-header
   zlib-zpipe
+EOF
+}
+
+show_libpng_header() {
+    cat <<'EOF'
+fixture=libpng-header
+project=libpng
+version=v1.6.43
+license=libpng-2.0
+upstream=https://github.com/pnggroup/libpng
+files=png.h;pngconf.h;scripts/pnglibconf.h.prebuilt;LICENSE
+target=test/full_apps/external/libpng/header
 EOF
 }
 
@@ -57,6 +70,7 @@ fi
 
 case "$1" in
     list)
+        echo libpng-header
         echo musl-stdint
         echo zlib-header
         echo zlib-zpipe
@@ -67,6 +81,9 @@ case "$1" in
             exit 1
         fi
         case "$2" in
+            libpng-header)
+                show_libpng_header
+                ;;
             musl-stdint)
                 show_musl_stdint
                 ;;
