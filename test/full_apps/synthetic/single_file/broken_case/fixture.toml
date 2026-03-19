@@ -1,0 +1,8 @@
+name = "broken_case"
+mode = "translation_unit"
+flavor = "std"
+entry = "main.c"
+expected = "parse_error"
+source = "synthetic"
+license = "repo"
+tags = ["synthetic", "single_file", "invalid"]

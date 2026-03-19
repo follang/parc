@@ -12,6 +12,7 @@ struct FullAppCase {
     path: PathBuf,
     flavor: AppFlavor,
     mode: AppMode,
+    expected: AppExpected,
     entry: PathBuf,
     include_dirs: Vec<PathBuf>,
     tags: Vec<String>,
@@ -30,6 +31,12 @@ enum AppMode {
     Driver,
 }
 
+#[derive(Copy, Clone, Debug)]
+enum AppExpected {
+    ParseOk,
+    ParseError,
+}
+
 impl FullAppCase {
     fn from_dir(path: PathBuf) -> io::Result<FullAppCase> {
         let manifest_path = path.join("fixture.toml");
@@ -37,6 +44,7 @@ impl FullAppCase {
 
         let mut flavor = AppFlavor::Core;
         let mut mode = AppMode::TranslationUnit;
+        let mut expected = AppExpected::ParseOk;
         let mut entry = None;
         let mut include_dirs = Vec::new();
         let mut tags = Vec::new();
@@ -75,12 +83,25 @@ impl FullAppCase {
             if let Some(values) = manifest_list_values(line, "tags") {
                 tags = values;
             }
+
+            if let Some(value) = manifest_value(line, "expected") {
+                expected = match value {
+                    "parse_ok" => AppExpected::ParseOk,
+                    "parse_error" => AppExpected::ParseError,
+                    _ => panic!(
+                        "{}: unsupported expected outcome `{}`",
+                        manifest_path.display(),
+                        value
+                    ),
+                };
+            }
         }
 
         Ok(FullAppCase {
             path: path,
             flavor: flavor,
             mode: mode,
+            expected: expected,
             entry: entry.unwrap_or_else(|| PathBuf::from("main.c")),
             include_dirs: include_dirs,
             tags: tags,
@@ -133,10 +154,11 @@ impl FullAppCase {
 
     fn describe(&self) -> String {
         format!(
-            "{} [mode={:?}, flavor={:?}]",
+            "{} [mode={:?}, flavor={:?}, expected={:?}]",
             self.path.display(),
             self.mode,
-            self.flavor
+            self.flavor,
+            self.expected
         )
     }
 }
@@ -182,9 +204,14 @@ fn full_app_main() {
         .iter()
         .map(|path| FullAppCase::from_dir(path.to_path_buf()).expect("loading full app fixture"))
         .filter(|case| case.matches_filters(path_filter.as_deref(), tag_filter.as_deref()))
-        .filter_map(|case| match case.run() {
-            Ok(()) => None,
-            Err(err) => Some(format!("{}: {}", case.describe(), err)),
+        .filter_map(|case| match (case.expected, case.run()) {
+            (AppExpected::ParseOk, Ok(())) => None,
+            (AppExpected::ParseError, Err(_)) => None,
+            (AppExpected::ParseOk, Err(err)) => Some(format!("{}: {}", case.describe(), err)),
+            (AppExpected::ParseError, Ok(())) => Some(format!(
+                "{}: expected parse error, but parsing succeeded",
+                case.describe()
+            )),
         })
         .collect::<Vec<_>>();
 
@@ -199,6 +226,7 @@ fn full_app_filter_matches_path_and_tag() {
         path: PathBuf::from("test/full_apps/synthetic/single_file/state_machine"),
         flavor: AppFlavor::Gnu,
         mode: AppMode::TranslationUnit,
+        expected: AppExpected::ParseOk,
         entry: PathBuf::from("main.c"),
         include_dirs: Vec::new(),
         tags: vec!["synthetic".to_owned(), "single_file".to_owned()],
@@ -210,4 +238,29 @@ fn full_app_filter_matches_path_and_tag() {
     assert!(case.matches_filters(Some("single_file"), Some("synthetic")));
     assert!(!case.matches_filters(Some("mini_http"), None));
     assert!(!case.matches_filters(None, Some("external")));
+}
+
+#[test]
+fn full_app_parse_error_expectation_is_supported() {
+    let case = FullAppCase {
+        path: PathBuf::from("test/full_apps/synthetic/single_file/broken_case"),
+        flavor: AppFlavor::Core,
+        mode: AppMode::TranslationUnit,
+        expected: AppExpected::ParseError,
+        entry: PathBuf::from("main.c"),
+        include_dirs: Vec::new(),
+        tags: vec!["synthetic".to_owned(), "invalid".to_owned()],
+    };
+
+    let parse_result: Result<(), parser::ParseError> = Err(parser::ParseError {
+        line: 1,
+        column: 1,
+        offset: 0,
+        expected: ::std::collections::HashSet::new(),
+    });
+
+    assert!(match (case.expected, parse_result) {
+        (AppExpected::ParseError, Err(_)) => true,
+        _ => false,
+    });
 }
