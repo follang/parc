@@ -25,7 +25,7 @@ Dual-licenced under Apache 2.0 or MIT licenses (see `LICENSE-APACHE` and `LICENS
 
 ## Development
 
-The parser implementation lives in `src/parser.rs` and is maintained directly in Rust.
+The parser implementation lives under `src/parser/` and is maintained directly in Rust.
 There is no external PEG generation step in the build anymore.
 
 The reference fixtures live under `test/reftests/`.
@@ -33,10 +33,8 @@ Larger translation-unit and multi-file fixtures live under `test/full_apps/`.
 
 The makefile mirrors the normal Cargo flow:
 
-- `make` runs the full test suite
-- `make lib` builds the library
+- `make build` builds the library
 - `make test` runs all tests
-- `make check` aliases to `make test`
 
 ### Full app fixtures
 
