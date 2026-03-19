@@ -322,6 +322,16 @@ fn full_app_manifest_supports_system_include_opt_in() {
 }
 
 #[test]
+fn full_app_example_fixtures_can_be_filtered_by_example_tag() {
+    let case =
+        FullAppCase::from_dir(PathBuf::from("test/full_apps/external/zlib/zpipe_example"))
+            .expect("loading external zlib example fixture");
+
+    assert!(case.matches_filters(None, Some("example")));
+    assert!(!case.matches_filters(None, Some("header")));
+}
+
+#[test]
 fn full_app_external_headers_can_be_tagged_slow() {
     let case = FullAppCase::from_dir(PathBuf::from("test/full_apps/external/musl/stdint"))
         .expect("loading external musl stdint fixture");
