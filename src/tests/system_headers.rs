@@ -14,12 +14,12 @@ fn unique_temp_dir() -> PathBuf {
         .duration_since(UNIX_EPOCH)
         .expect("system time before unix epoch")
         .as_nanos();
-    env::temp_dir().join(format!("lang-c-system-headers-{}", stamp))
+    env::temp_dir().join(format!("pac-system-headers-{}", stamp))
 }
 
 fn write_wrapper(dir: &Path, header: &str) -> PathBuf {
     let wrapper = dir.join("wrapper.c");
-    let source = format!("#include <{}>\nint lang_c_header_probe(void) {{ return 0; }}\n", header);
+    let source = format!("#include <{}>\nint pac_header_probe(void) {{ return 0; }}\n", header);
     fs::write(&wrapper, source).expect("writing temporary wrapper");
     wrapper
 }

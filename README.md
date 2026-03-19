@@ -1,13 +1,13 @@
 # Lang-C
 
-[![Documentation](https://docs.rs/lang-c/badge.svg)](https://docs.rs/lang-c)
+[![Documentation](https://docs.rs/pac/badge.svg)](https://docs.rs/pac)
 
 Ligtweight parser of C language for Rust users. Almost full support for C11 revision of the language.
 Several GCC and Clang extensions are also supported as an option.
 
 ```rust
-extern crate lang_c;
-use lang_c::driver::{Config, parse}; 
+extern crate pac;
+use pac::driver::{Config, parse}; 
 
 fn main() {
     let config = Config::default();

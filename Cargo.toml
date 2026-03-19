@@ -1,12 +1,12 @@
 [package]
-name = "lang-c"
+name = "pac"
 version = "0.15.1"
 authors = ["Vickenty Fesunov <kent@setattr.net>"]
 edition = "2021"
 license = "MIT/Apache-2.0"
 description = "Lightweight C parser"
 include = [ "/src/**/*.rs", "Cargo.toml", "/LICENSE*", "/README.md" ]
-documentation = "https://docs.rs/lang-c"
+documentation = "https://docs.rs/pac"
 homepage = "https://github.com/vickenty/lang-c"
 repository = "https://github.com/vickenty/lang-c"
 keywords = [ "ast", "c", "parser", "c-language" ]
