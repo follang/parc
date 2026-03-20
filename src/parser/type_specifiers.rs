@@ -806,23 +806,9 @@ fn __parse_type_specifier_nonunique<'input>(__input: &'input str, __state: &mut 
                                                                                         match __choice_res {
                                                                                             Matched(__pos, __value) => Matched(__pos, __value),
                                                                                             Failed => {
-                                                                                                let __seq_res = {
-                                                                                                    __state.suppress_fail += 1;
-                                                                                                    let __assert_res = __parse_gnu_guard(__input, __state, __pos, env);
-                                                                                                    __state.suppress_fail -= 1;
-                                                                                                    match __assert_res {
-                                                                                                        Matched(_, __value) => Matched(__pos, __value),
-                                                                                                        Failed => Failed,
-                                                                                                    }
-                                                                                                };
+                                                                                                let __seq_res = __parse_typeof_specifier(__input, __state, __pos, env);
                                                                                                 match __seq_res {
-                                                                                                    Matched(__pos, _) => {
-                                                                                                        let __seq_res = __parse_typeof_specifier(__input, __state, __pos, env);
-                                                                                                        match __seq_res {
-                                                                                                            Matched(__pos, e) => Matched(__pos, { e }),
-                                                                                                            Failed => Failed,
-                                                                                                        }
-                                                                                                    }
+                                                                                                    Matched(__pos, e) => Matched(__pos, { e }),
                                                                                                     Failed => Failed,
                                                                                                 }
                                                                                             }
