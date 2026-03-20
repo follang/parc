@@ -15,6 +15,8 @@ pub struct IncludeResolver {
     system_paths: Vec<PathBuf>,
     /// Include guards: tracks headers that have already been fully included.
     guards: HashSet<String>,
+    /// Files that have used `#pragma once`.
+    pragma_once_files: HashSet<PathBuf>,
     /// File content cache: avoids re-reading files from disk.
     file_cache: HashMap<PathBuf, String>,
     /// Maximum include depth to prevent infinite recursion.
@@ -43,6 +45,7 @@ impl IncludeResolver {
             local_paths: Vec::new(),
             system_paths: Vec::new(),
             guards: HashSet::new(),
+            pragma_once_files: HashSet::new(),
             file_cache: HashMap::new(),
             max_depth: 200,
             depth: 0,
@@ -183,6 +186,11 @@ impl IncludeResolver {
 
         let canonical = std::fs::canonicalize(&resolved).ok()?;
 
+        // Check #pragma once
+        if self.pragma_once_files.contains(&canonical) {
+            return Some(Vec::new());
+        }
+
         // Check if this file has an include guard that's already been defined
         if let Some(guard) = self.detect_guard(&canonical) {
             if self.guards.contains(&guard) {
@@ -228,6 +236,11 @@ impl IncludeResolver {
 
         self.depth -= 1;
         self.current_dir = old_dir;
+
+        // Track #pragma once
+        if output.pragma_once {
+            self.pragma_once_files.insert(canonical.clone());
+        }
 
         // If the file had an include guard, mark it
         if let Some(guard) = self.detect_guard(&canonical) {
@@ -412,6 +425,37 @@ mod tests {
         let text = result.text.trim().to_string();
         assert!(text.contains("int api_func();"), "got: {}", text);
         assert!(text.contains("int main()"), "got: {}", text);
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn pragma_once_prevents_double_include() {
+        let dir = std::env::temp_dir().join("pac_test_pragma_once");
+        let _ = std::fs::create_dir_all(&dir);
+
+        std::fs::write(
+            dir.join("once.h"),
+            "#pragma once\nint once_var;\n",
+        )
+        .unwrap();
+        std::fs::write(
+            dir.join("main.c"),
+            "#include \"once.h\"\n#include \"once.h\"\n",
+        )
+        .unwrap();
+
+        let mut resolver = IncludeResolver::new();
+        let mut proc = Processor::new();
+        let result = resolver.preprocess_file(&dir.join("main.c"), &mut proc);
+
+        let text = result.text.trim().to_string();
+        assert_eq!(
+            text.matches("int once_var;").count(),
+            1,
+            "got: {}",
+            text
+        );
 
         let _ = std::fs::remove_dir_all(&dir);
     }

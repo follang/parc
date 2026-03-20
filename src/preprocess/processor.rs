@@ -23,6 +23,8 @@ pub struct ProcessorOutput {
     pub warnings: Vec<String>,
     /// Include requests found in active branches.
     pub includes: Vec<IncludeRequest>,
+    /// Whether `#pragma once` was encountered.
+    pub pragma_once: bool,
 }
 
 /// An `#include` directive found during processing.
@@ -103,6 +105,7 @@ impl Processor {
             errors: Vec::new(),
             warnings: Vec::new(),
             includes: Vec::new(),
+            pragma_once: false,
         };
 
         let mut cond_stack: Vec<CondState> = Vec::new();
@@ -233,12 +236,19 @@ impl Processor {
                     Directive::Warning { message } => {
                         output.warnings.push(message);
                     }
+                    Directive::Pragma { ref tokens } => {
+                        // Check for #pragma once
+                        let first_nonws = tokens.iter()
+                            .find(|t| t.kind != TokenKind::Whitespace);
+                        if first_nonws.map_or(false, |t| t.text == "once") {
+                            output.pragma_once = true;
+                        }
+                    }
                     Directive::Line { .. }
                     | Directive::LineMarker { .. }
-                    | Directive::Pragma { .. }
                     | Directive::Null
                     | Directive::Unknown { .. } => {
-                        // Silently skip for now
+                        // Silently skip
                     }
                 }
                 continue;
