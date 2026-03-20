@@ -8,9 +8,11 @@ mod lexer;
 mod directive;
 mod macros;
 mod expr;
+mod processor;
 
 pub use self::token::{Token, TokenKind};
 pub use self::lexer::Lexer;
 pub use self::directive::{Directive, parse_directive};
 pub use self::macros::{MacroDef, MacroTable};
 pub use self::expr::eval_condition;
+pub use self::processor::{Processor, ProcessorOutput, IncludeRequest, preprocess, tokens_to_text};
