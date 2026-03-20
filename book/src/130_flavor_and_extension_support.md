@@ -52,6 +52,35 @@ PAC also models Clang-specific or Clang-common syntax including:
 If your preprocessing and syntax assumptions are built around Clang, use `Config::with_clang()` or
 `Flavor::ClangC11`.
 
+## C23 keyword support
+
+PAC accepts the following C23 keywords in all flavors, because modern compilers (GCC 15+) emit them
+in preprocessed output by default:
+
+| C23 keyword | C11 equivalent | Notes |
+| --- | --- | --- |
+| `bool` | `_Bool` | type specifier |
+| `true` | `1` | parsed as integer constant |
+| `false` | `0` | parsed as integer constant |
+| `nullptr` | `0` | parsed as integer constant |
+| `static_assert` | `_Static_assert` | declaration |
+| `alignas` | `_Alignas` | alignment specifier |
+| `alignof` | `_Alignof` | expression |
+| `thread_local` | `_Thread_local` | storage class |
+| `constexpr` | (none) | storage class specifier |
+| `typeof` | `__typeof__` | type specifier (was GNU-only) |
+| `_BitInt(N)` | (none) | type specifier with width |
+
+## GCC extension types
+
+PAC recognizes these GCC extension types in GNU mode:
+
+| Type | AST variant | Notes |
+| --- | --- | --- |
+| `__int128` | `TypeSpecifier::Int128` | non-unique, combinable with `signed`/`unsigned` |
+| `__float128` | `TypeSpecifier::Float128` | unique type specifier |
+| `__builtin_va_list` | typedef | handled as built-in typedef name |
+
 ## Standard-mode guidance
 
 Use `StdC11` when:
