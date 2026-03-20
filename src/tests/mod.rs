@@ -1,3 +1,4 @@
+mod consumability;
 mod contract;
 mod differential;
 mod external_tools;
