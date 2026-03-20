@@ -56,7 +56,7 @@ impl Default for Config {
 }
 
 /// C language flavors
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Debug, serde::Serialize, serde::Deserialize)]
 pub enum Flavor {
     /// Strict standard C11
     StdC11,

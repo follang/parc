@@ -34,6 +34,7 @@ pub mod loc;
 pub mod parse;
 pub mod preprocess;
 pub mod print;
+pub mod scan;
 pub mod span;
 pub mod visit;
 
