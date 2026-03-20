@@ -25,3 +25,4 @@
   - [Support Tiers](./180_support_tiers.md)
   - [Parser Boundaries](./190_parser_boundaries.md)
   - [Release Checklist](./200_release_checklist.md)
+- [Migration From bic](./210_migration_from_bic.md)
