@@ -1,5 +1,6 @@
 mod consumability;
 mod contract;
+mod determinism;
 mod differential;
 mod external_tools;
 mod extraction_fixtures;
