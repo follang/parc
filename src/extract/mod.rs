@@ -715,6 +715,20 @@ pub fn parse_and_extract_resilient(
     }
 }
 
+/// Read a file and extract a `SourcePackage` from it.
+pub fn extract_file(
+    path: impl AsRef<std::path::Path>,
+    flavor: crate::driver::Flavor,
+) -> Result<SourcePackage, String> {
+    let path = path.as_ref();
+    let source = std::fs::read_to_string(path)
+        .map_err(|e| format!("failed to read {}: {}", path.display(), e))?;
+
+    let mut pkg = parse_and_extract(&source, flavor)?;
+    pkg.source_path = Some(path.display().to_string());
+    Ok(pkg)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1160,5 +1174,26 @@ mod tests {
         let j1 = serde_json::to_string(&pkg1).unwrap();
         let j2 = serde_json::to_string(&pkg2).unwrap();
         assert_eq!(j1, j2);
+    }
+
+    #[test]
+    fn extract_file_works() {
+        let dir = std::env::temp_dir().join("pac_test_extract_file");
+        let _ = std::fs::create_dir_all(&dir);
+        let path = dir.join("test.h");
+        std::fs::write(&path, "int foo(void);\nstruct bar { int x; };\n").unwrap();
+
+        let pkg = super::extract_file(&path, crate::driver::Flavor::GnuC11).unwrap();
+        assert_eq!(pkg.function_count(), 1);
+        assert_eq!(pkg.record_count(), 1);
+        assert_eq!(pkg.source_path.as_deref(), Some(path.display().to_string().as_str()));
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn extract_file_missing_returns_error() {
+        let result = super::extract_file("/nonexistent/file.h", crate::driver::Flavor::GnuC11);
+        assert!(result.is_err());
     }
 }
