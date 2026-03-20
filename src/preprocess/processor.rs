@@ -66,6 +66,38 @@ impl Processor {
 
     /// Process a token stream, resolving conditionals and expanding macros.
     pub fn process(&mut self, tokens: &[Token]) -> ProcessorOutput {
+        self.process_inner(tokens, &mut |_, _, _| None)
+    }
+
+    /// Process tokens with inline include resolution.
+    ///
+    /// The `include_handler` is called for each `#include` directive in an
+    /// active branch. It receives `(path, system, &mut self)` and should
+    /// return `Some(tokens)` if the include was resolved, or `None` to skip.
+    pub fn process_with_includes<F>(
+        &mut self,
+        tokens: &[Token],
+        include_handler: &mut F,
+    ) -> ProcessorOutput
+    where
+        F: FnMut(&str, bool, &mut MacroTable) -> Option<Vec<Token>>,
+    {
+        self.process_inner(tokens, include_handler)
+    }
+
+    /// Get a mutable reference to the macro table.
+    pub fn macros_mut(&mut self) -> &mut MacroTable {
+        &mut self.macros
+    }
+
+    fn process_inner<F>(
+        &mut self,
+        tokens: &[Token],
+        include_handler: &mut F,
+    ) -> ProcessorOutput
+    where
+        F: FnMut(&str, bool, &mut MacroTable) -> Option<Vec<Token>>,
+    {
         let mut output = ProcessorOutput {
             tokens: Vec::new(),
             errors: Vec::new(),
@@ -184,11 +216,16 @@ impl Processor {
                         self.macros.undef(&name);
                     }
                     Directive::Include { path, system } => {
-                        output.includes.push(IncludeRequest {
-                            path,
-                            system,
-                            offset: tokens[dir_start].offset,
-                        });
+                        // Try inline include resolution first
+                        if let Some(inc_tokens) = include_handler(&path, system, &mut self.macros) {
+                            output.tokens.extend(inc_tokens);
+                        } else {
+                            output.includes.push(IncludeRequest {
+                                path,
+                                system,
+                                offset: tokens[dir_start].offset,
+                            });
+                        }
                     }
                     Directive::Error { message } => {
                         output.errors.push(message);

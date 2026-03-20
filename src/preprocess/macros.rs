@@ -16,6 +16,7 @@ pub struct MacroDef {
 }
 
 /// Macro table: stores and expands macro definitions.
+#[derive(Default)]
 pub struct MacroTable {
     macros: HashMap<String, MacroDef>,
 }
