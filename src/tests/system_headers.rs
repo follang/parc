@@ -65,3 +65,52 @@ fn system_header_wrappers_parse_when_headers_exist() {
         );
     }
 }
+
+#[test]
+fn resilient_parser_recovers_items_from_linux_headers() {
+    let header_path = Path::new("/usr/include/linux/input.h");
+    if !header_path.exists() {
+        return; // Skip if header not available
+    }
+
+    let dir = unique_temp_dir();
+    fs::create_dir_all(&dir).expect("creating temp dir");
+    let wrapper = dir.join("wrapper.c");
+    fs::write(&wrapper, "#include <linux/input.h>\n").expect("writing wrapper");
+
+    let mut config = Config::with_gcc();
+    config.cpp_options.push("-D_GNU_SOURCE".to_owned());
+
+    let processed = match preprocess_for_test(&config, &wrapper) {
+        Some(s) => s,
+        None => {
+            let _ = fs::remove_file(&wrapper);
+            let _ = fs::remove_dir(&dir);
+            return;
+        }
+    };
+
+    let tu = driver::parse_preprocessed_resilient(&config, processed);
+    assert!(
+        tu.unit.0.len() > 0,
+        "resilient parser should recover at least some declarations from linux/input.h"
+    );
+
+    let _ = fs::remove_file(&wrapper);
+    let _ = fs::remove_dir(&dir);
+}
+
+fn preprocess_for_test(config: &Config, source: &Path) -> Option<String> {
+    use std::process::Command;
+    let mut cmd = Command::new(&config.cpp_command);
+    for item in &config.cpp_options {
+        cmd.arg(item);
+    }
+    cmd.arg(source);
+    let output = cmd.output().ok()?;
+    if output.status.success() {
+        String::from_utf8(output.stdout).ok()
+    } else {
+        None
+    }
+}
