@@ -30,3 +30,20 @@ fn parse_api_translation_unit_works() {
     parse::translation_unit("typedef int counter_t;\nint main(void) { return 0; }\n", Flavor::StdC11)
         .expect("parsing translation unit");
 }
+
+#[test]
+fn parse_api_resilient_recovers_from_invalid_declaration() {
+    let input = "int before;\n@@@invalid@@@;\nint after;\n";
+    // Strict parse should fail
+    assert!(parse::translation_unit(input, Flavor::StdC11).is_err());
+    // Resilient parse should recover
+    let tu = parse::translation_unit_resilient(input, Flavor::StdC11);
+    assert_eq!(tu.0.len(), 2, "expected 2 declarations, got {}", tu.0.len());
+}
+
+#[test]
+fn parse_api_resilient_returns_all_when_valid() {
+    let input = "int x;\nint y;\nint z;\n";
+    let tu = parse::translation_unit_resilient(input, Flavor::StdC11);
+    assert_eq!(tu.0.len(), 3, "expected 3 declarations, got {}", tu.0.len());
+}

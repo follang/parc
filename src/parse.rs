@@ -41,3 +41,8 @@ pub fn translation_unit(source: &str, flavor: Flavor) -> ParseResult<Translation
     let mut env = env_for(flavor);
     parser::translation_unit(source, &mut env)
 }
+
+pub fn translation_unit_resilient(source: &str, flavor: Flavor) -> TranslationUnit {
+    let mut env = env_for(flavor);
+    parser::translation_unit_resilient(source, &mut env)
+}
