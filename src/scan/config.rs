@@ -14,8 +14,11 @@ use crate::driver::Flavor;
 pub struct ScanConfig {
     /// Entry-point headers that define the API surface.
     pub entry_headers: Vec<PathBuf>,
-    /// Preprocessor include search paths.
+    /// Preprocessor include search paths (local/user headers).
     pub include_dirs: Vec<PathBuf>,
+    /// System include search paths (for `<...>` includes like `/usr/include`).
+    #[serde(default)]
+    pub system_include_dirs: Vec<PathBuf>,
     /// Preprocessor defines.
     pub defines: Vec<(String, Option<String>)>,
     /// Compiler command for external preprocessing.
@@ -25,6 +28,9 @@ pub struct ScanConfig {
     /// Whether to use the built-in preprocessor instead of an external compiler.
     #[serde(default)]
     pub use_builtin_preprocessor: bool,
+    /// Whether to resolve all typedef chains after extraction.
+    #[serde(default)]
+    pub resolve_typedefs: bool,
 }
 
 impl ScanConfig {
@@ -32,10 +38,12 @@ impl ScanConfig {
         Self {
             entry_headers: Vec::new(),
             include_dirs: Vec::new(),
+            system_include_dirs: Vec::new(),
             defines: Vec::new(),
             compiler: None,
             flavor: Flavor::GnuC11,
             use_builtin_preprocessor: false,
+            resolve_typedefs: false,
         }
     }
 
@@ -46,6 +54,12 @@ impl ScanConfig {
 
     pub fn include_dir(mut self, path: impl Into<PathBuf>) -> Self {
         self.include_dirs.push(path.into());
+        self
+    }
+
+    /// Add a system include search path (for `<...>` includes).
+    pub fn system_include_dir(mut self, path: impl Into<PathBuf>) -> Self {
+        self.system_include_dirs.push(path.into());
         self
     }
 
@@ -71,6 +85,12 @@ impl ScanConfig {
 
     pub fn with_builtin_preprocessor(mut self) -> Self {
         self.use_builtin_preprocessor = true;
+        self
+    }
+
+    /// Enable transitive typedef resolution after extraction.
+    pub fn with_resolve_typedefs(mut self) -> Self {
+        self.resolve_typedefs = true;
         self
     }
 }

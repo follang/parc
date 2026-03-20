@@ -58,6 +58,10 @@ pub fn scan_headers(config: &ScanConfig) -> Result<ScanResult, ScanError> {
     pkg.items = items;
     pkg.diagnostics = diagnostics;
 
+    if config.resolve_typedefs {
+        pkg.resolve_all_typedefs();
+    }
+
     Ok(ScanResult {
         package: pkg,
         preprocessed_source: preprocessed,
@@ -110,6 +114,9 @@ fn preprocess_external(config: &ScanConfig) -> Result<(String, String), ScanErro
     for dir in &config.include_dirs {
         cmd.arg("-I").arg(dir);
     }
+    for dir in &config.system_include_dirs {
+        cmd.arg("-isystem").arg(dir);
+    }
     for (name, value) in &config.defines {
         match value {
             Some(v) => cmd.arg(format!("-D{}={}", name, v)),
@@ -132,13 +139,28 @@ fn preprocess_external(config: &ScanConfig) -> Result<(String, String), ScanErro
 }
 
 fn preprocess_builtin(config: &ScanConfig) -> Result<(String, String), ScanError> {
-    use crate::preprocess::{IncludeResolver, Processor, MacroDef, Token, TokenKind};
+    use crate::preprocess::{
+        define_target_macros, IncludeResolver, MacroDef, MacroTable, Processor, Target, Token,
+        TokenKind,
+    };
 
+    // Initialize with target macros for the host platform
+    let target = Target::host();
+    let mut table = MacroTable::new();
+    define_target_macros(&mut table, &target);
+
+    let mut processor = Processor::with_macros(table);
     let mut resolver = IncludeResolver::new();
-    let mut processor = Processor::new();
 
-    // Add include dirs
+    // Add user include dirs (searchable for both "..." and <...> includes)
     for dir in &config.include_dirs {
+        resolver.add_local_path(dir);
+        resolver.add_system_path(dir);
+    }
+
+    // Add system include dirs (for <...> includes like /usr/include)
+    for dir in &config.system_include_dirs {
+        resolver.add_system_path(dir);
         resolver.add_local_path(dir);
     }
 
@@ -301,5 +323,113 @@ mod tests {
         let back: ScanConfig = serde_json::from_str(&json).unwrap();
         assert_eq!(back.entry_headers.len(), 1);
         assert_eq!(back.defines.len(), 1);
+    }
+
+    #[test]
+    fn scan_system_include_dir() {
+        let dir = std::env::temp_dir().join("pac_test_sys_inc");
+        let sysdir = dir.join("sys");
+        let _ = std::fs::create_dir_all(&sysdir);
+
+        // System header in a separate directory
+        std::fs::write(sysdir.join("mytypes.h"), "typedef unsigned long size_t;\n").unwrap();
+        std::fs::write(
+            dir.join("api.h"),
+            "#include <mytypes.h>\nsize_t get_size(void);\n",
+        )
+        .unwrap();
+
+        let config = ScanConfig::new()
+            .entry_header(dir.join("api.h"))
+            .system_include_dir(&sysdir)
+            .with_builtin_preprocessor();
+
+        let result = scan_headers(&config).expect("scan should succeed");
+        assert!(result.package.find_type_alias("size_t").is_some());
+        assert!(result.package.find_function("get_size").is_some());
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn scan_with_resolve_typedefs() {
+        let dir = std::env::temp_dir().join("pac_test_resolve");
+        let _ = std::fs::create_dir_all(&dir);
+
+        std::fs::write(
+            dir.join("api.h"),
+            r#"
+typedef unsigned int uint32_t;
+typedef uint32_t handle_t;
+handle_t create(void);
+void destroy(handle_t h);
+"#,
+        )
+        .unwrap();
+
+        let config = ScanConfig::new()
+            .entry_header(dir.join("api.h"))
+            .with_builtin_preprocessor()
+            .with_resolve_typedefs();
+
+        let result = scan_headers(&config).expect("scan should succeed");
+        let pkg = &result.package;
+
+        // After resolution: handle_t's target should be UInt, not TypedefRef
+        let alias = pkg.find_type_alias("handle_t").unwrap();
+        assert_eq!(alias.target, crate::ir::SourceType::UInt);
+
+        // Function return type should be resolved
+        let create = pkg.find_function("create").unwrap();
+        assert_eq!(create.return_type, crate::ir::SourceType::UInt);
+
+        let destroy = pkg.find_function("destroy").unwrap();
+        assert_eq!(destroy.parameters[0].ty, crate::ir::SourceType::UInt);
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn scan_system_include_with_resolve() {
+        let dir = std::env::temp_dir().join("pac_test_sys_resolve");
+        let sysdir = dir.join("inc");
+        let _ = std::fs::create_dir_all(&sysdir);
+
+        std::fs::write(sysdir.join("base.h"), "typedef unsigned long size_t;\n").unwrap();
+        std::fs::write(
+            dir.join("api.h"),
+            "#include <base.h>\nvoid *alloc(size_t n);\nsize_t length(const void *p);\n",
+        )
+        .unwrap();
+
+        let config = ScanConfig::new()
+            .entry_header(dir.join("api.h"))
+            .system_include_dir(&sysdir)
+            .with_builtin_preprocessor()
+            .with_resolve_typedefs();
+
+        let result = scan_headers(&config).expect("scan should succeed");
+        let pkg = &result.package;
+
+        // size_t should be resolved to ULong
+        let alloc = pkg.find_function("alloc").unwrap();
+        assert_eq!(alloc.parameters[0].ty, crate::ir::SourceType::ULong);
+
+        let length = pkg.find_function("length").unwrap();
+        assert_eq!(length.return_type, crate::ir::SourceType::ULong);
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn scan_config_system_dirs_builder() {
+        let config = ScanConfig::new()
+            .entry_header("api.h")
+            .system_include_dir("/usr/include")
+            .system_include_dir("/usr/local/include")
+            .with_resolve_typedefs();
+
+        assert_eq!(config.system_include_dirs.len(), 2);
+        assert!(config.resolve_typedefs);
     }
 }
