@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Header Scanning - PAC Reference</title>
+        <title>Header Scanning - PARC Reference</title>
 
 
         <!-- Custom HTML head -->
@@ -35,10 +35,10 @@
             const path_to_root = "";
             const default_light_theme = "navy";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-c5b10b10.js";
+            window.path_to_searchindex_js = "searchindex-107bc103.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-5d57fb77.js"></script>
+        <script src="toc-faeb9e03.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -137,7 +137,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">PAC Reference</h1>
+                    <h1 class="menu-title">PARC Reference</h1>
 
                     <div class="right-buttons">
                         <a href="print.html" title="Print this book" aria-label="Print this book">
@@ -175,12 +175,12 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="header-scanning"><a class="header" href="#header-scanning">Header Scanning</a></h1>
-<p>The <code>pac::scan</code> module provides end-to-end header scanning: preprocess
+<p>The <code>parc::scan</code> module provides end-to-end header scanning: preprocess
 C headers and extract a <code>SourcePackage</code> in one step.</p>
 <h2 id="quick-start"><a class="header" href="#quick-start">Quick Start</a></h2>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::scan::{ScanConfig, scan_headers};
+</span>use parc::scan::{ScanConfig, scan_headers};
 
 let config = ScanConfig::new()
     .entry_header("api.h")
@@ -214,7 +214,7 @@ let pkg = result.package;
 <p>Uses <code>gcc -E</code> or <code>clang -E</code> to preprocess headers. Requires the
 compiler to be installed. Supports all system headers.</p>
 <h3 id="built-in"><a class="header" href="#built-in">Built-in</a></h3>
-<p>Uses <code>pac::preprocess</code> for self-contained headers that don’t need
+<p>Uses <code>parc::preprocess</code> for self-contained headers that don’t need
 system includes. No external compiler required.</p>
 <h2 id="scanresult"><a class="header" href="#scanresult">ScanResult</a></h2>
 <p>The scan produces:</p>
@@ -224,14 +224,14 @@ system includes. No external compiler required.</p>
 </ul>
 <h2 id="intake"><a class="header" href="#intake">Intake</a></h2>
 <p>For already-preprocessed source (e.g., output of <code>gcc -E</code>), use
-<code>pac::intake::PreprocessedInput</code>:</p>
+<code>parc::intake::PreprocessedInput</code>:</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::intake::PreprocessedInput;
+</span>use parc::intake::PreprocessedInput;
 
 let input = PreprocessedInput::from_string("int foo(void);")
     .with_path("output.i")
-    .with_flavor(pac::driver::Flavor::GnuC11);
+    .with_flavor(parc::driver::Flavor::GnuC11);
 
 let pkg = input.extract();
 <span class="boring">}</span></code></pre>

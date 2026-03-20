@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Introduction - PAC Reference</title>
+        <title>Introduction - PARC Reference</title>
 
 
         <!-- Custom HTML head -->
@@ -35,10 +35,10 @@
             const path_to_root = "";
             const default_light_theme = "navy";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-c5b10b10.js";
+            window.path_to_searchindex_js = "searchindex-107bc103.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-5d57fb77.js"></script>
+        <script src="toc-faeb9e03.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -137,7 +137,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">PAC Reference</h1>
+                    <h1 class="menu-title">PARC Reference</h1>
 
                     <div class="right-buttons">
                         <a href="print.html" title="Print this book" aria-label="Print this book">
@@ -174,29 +174,28 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="pac-reference"><a class="header" href="#pac-reference">PAC Reference</a></h1>
-<p>PAC is a Rust library for C language frontend processing: preprocessing,
+                        <h1 id="parc-reference"><a class="header" href="#parc-reference">PARC Reference</a></h1>
+<p>PARC is a Rust library for C language frontend processing: preprocessing,
 parsing, and source-level semantic extraction. It targets C11 and can
 optionally accept GNU and Clang extensions.</p>
-<p>PAC is the frontend stage of the PARC pipeline. It produces a durable
-<code>SourcePackage</code> contract suitable for downstream consumption by linker
-and codegen stages.</p>
-<h2 id="what-pac-gives-you"><a class="header" href="#what-pac-gives-you">What PAC gives you</a></h2>
+<p>PARC produces a durable <code>SourcePackage</code> contract suitable for downstream
+consumption by linker and codegen stages.</p>
+<h2 id="what-parc-gives-you"><a class="header" href="#what-parc-gives-you">What PARC gives you</a></h2>
 <ul>
 <li><strong>Preprocessing</strong>: built-in C preprocessor with macro expansion, conditionals, and includes</li>
-<li><strong>Parsing</strong>: C11 parser producing a typed AST under <code>pac::ast</code></li>
-<li><strong>Extraction</strong>: source-level declaration normalization into <code>pac::ir</code></li>
+<li><strong>Parsing</strong>: C11 parser producing a typed AST under <code>parc::ast</code></li>
+<li><strong>Extraction</strong>: source-level declaration normalization into <code>parc::ir</code></li>
 <li><strong>Source IR</strong>: a serializable <code>SourcePackage</code> with functions, records, enums, typedefs, variables, macros, diagnostics, and provenance</li>
-<li><strong>Scanning</strong>: end-to-end header scanning via <code>pac::scan</code></li>
-<li>Source spans under <code>pac::span</code></li>
-<li>File/line reconstruction under <code>pac::loc</code></li>
-<li>Recursive visitor API under <code>pac::visit</code></li>
-<li>Tree-style debug printer under <code>pac::print</code></li>
+<li><strong>Scanning</strong>: end-to-end header scanning via <code>parc::scan</code></li>
+<li>Source spans under <code>parc::span</code></li>
+<li>File/line reconstruction under <code>parc::loc</code></li>
+<li>Recursive visitor API under <code>parc::visit</code></li>
+<li>Tree-style debug printer under <code>parc::print</code></li>
 </ul>
 <h2 id="pipeline"><a class="header" href="#pipeline">Pipeline</a></h2>
 <pre><code class="language-text">C source / headers
   -&gt; preprocessor (built-in or gcc/clang)
-  -&gt; PAC parser
+  -&gt; PARC parser
   -&gt; extraction
   -&gt; SourcePackage (frontend contract)
   -&gt; downstream (LINC, GERC)

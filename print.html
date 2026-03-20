@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>PAC Reference</title>
+        <title>PARC Reference</title>
         <meta name="robots" content="noindex">
 
 
@@ -36,10 +36,10 @@
             const path_to_root = "";
             const default_light_theme = "navy";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-c5b10b10.js";
+            window.path_to_searchindex_js = "searchindex-107bc103.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-5d57fb77.js"></script>
+        <script src="toc-faeb9e03.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -138,7 +138,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">PAC Reference</h1>
+                    <h1 class="menu-title">PARC Reference</h1>
 
                     <div class="right-buttons">
                         <a href="print.html" title="Print this book" aria-label="Print this book">
@@ -175,29 +175,28 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="pac-reference"><a class="header" href="#pac-reference">PAC Reference</a></h1>
-<p>PAC is a Rust library for C language frontend processing: preprocessing,
+                        <h1 id="parc-reference"><a class="header" href="#parc-reference">PARC Reference</a></h1>
+<p>PARC is a Rust library for C language frontend processing: preprocessing,
 parsing, and source-level semantic extraction. It targets C11 and can
 optionally accept GNU and Clang extensions.</p>
-<p>PAC is the frontend stage of the PARC pipeline. It produces a durable
-<code>SourcePackage</code> contract suitable for downstream consumption by linker
-and codegen stages.</p>
-<h2 id="what-pac-gives-you"><a class="header" href="#what-pac-gives-you">What PAC gives you</a></h2>
+<p>PARC produces a durable <code>SourcePackage</code> contract suitable for downstream
+consumption by linker and codegen stages.</p>
+<h2 id="what-parc-gives-you"><a class="header" href="#what-parc-gives-you">What PARC gives you</a></h2>
 <ul>
 <li><strong>Preprocessing</strong>: built-in C preprocessor with macro expansion, conditionals, and includes</li>
-<li><strong>Parsing</strong>: C11 parser producing a typed AST under <code>pac::ast</code></li>
-<li><strong>Extraction</strong>: source-level declaration normalization into <code>pac::ir</code></li>
+<li><strong>Parsing</strong>: C11 parser producing a typed AST under <code>parc::ast</code></li>
+<li><strong>Extraction</strong>: source-level declaration normalization into <code>parc::ir</code></li>
 <li><strong>Source IR</strong>: a serializable <code>SourcePackage</code> with functions, records, enums, typedefs, variables, macros, diagnostics, and provenance</li>
-<li><strong>Scanning</strong>: end-to-end header scanning via <code>pac::scan</code></li>
-<li>Source spans under <code>pac::span</code></li>
-<li>File/line reconstruction under <code>pac::loc</code></li>
-<li>Recursive visitor API under <code>pac::visit</code></li>
-<li>Tree-style debug printer under <code>pac::print</code></li>
+<li><strong>Scanning</strong>: end-to-end header scanning via <code>parc::scan</code></li>
+<li>Source spans under <code>parc::span</code></li>
+<li>File/line reconstruction under <code>parc::loc</code></li>
+<li>Recursive visitor API under <code>parc::visit</code></li>
+<li>Tree-style debug printer under <code>parc::print</code></li>
 </ul>
 <h2 id="pipeline"><a class="header" href="#pipeline">Pipeline</a></h2>
 <pre><code class="language-text">C source / headers
   -&gt; preprocessor (built-in or gcc/clang)
-  -&gt; PAC parser
+  -&gt; PARC parser
   -&gt; extraction
   -&gt; SourcePackage (frontend contract)
   -&gt; downstream (LINC, GERC)
@@ -245,13 +244,13 @@ and codegen stages.</p>
 <h1 id="getting-started"><a class="header" href="#getting-started">Getting Started</a></h1>
 <h2 id="add-the-crate"><a class="header" href="#add-the-crate">Add the crate</a></h2>
 <pre><code class="language-toml">[dependencies]
-pac = { path = "../pac" }
+parc = { path = "../pac" }
 </code></pre>
 <h2 id="pick-the-right-api-first"><a class="header" href="#pick-the-right-api-first">Pick the right API first</a></h2>
-<p>Use <code>pac::driver</code> when you have a file on disk and want PAC to run a system preprocessor first.</p>
-<pre class="playground"><code class="language-rust">use pac::driver::{parse, Config};
+<p>Use <code>parc::driver</code> when you have a file on disk and want PAC to run a system preprocessor first.</p>
+<pre class="playground"><code class="language-rust">use parc::driver::{parse, Config};
 
-fn main() -&gt; Result&lt;(), pac::driver::Error&gt; {
+fn main() -&gt; Result&lt;(), parc::driver::Error&gt; {
     let config = Config::default();
     let parsed = parse(&amp;config, "examples/sample.c")?;
 
@@ -259,9 +258,9 @@ fn main() -&gt; Result&lt;(), pac::driver::Error&gt; {
     println!("top-level items: {}", parsed.unit.0.len());
     Ok(())
 }</code></pre>
-<p>Use <code>pac::parse</code> when you already have source text in memory and want to parse a fragment directly.</p>
-<pre class="playground"><code class="language-rust">use pac::driver::Flavor;
-use pac::parse;
+<p>Use <code>parc::parse</code> when you already have source text in memory and want to parse a fragment directly.</p>
+<pre class="playground"><code class="language-rust">use parc::driver::Flavor;
+use parc::parse;
 
 fn main() {
     let expr = parse::expression("a + b * 2", Flavor::StdC11).unwrap();
@@ -289,16 +288,16 @@ fn main() {
 <p>You can also select explicitly:</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::Config;
+</span>use parc::driver::Config;
 
 let gnu = Config::with_gcc();
 let clang = Config::with_clang();
 <span class="boring">}</span></code></pre>
 <h2 id="first-useful-example"><a class="header" href="#first-useful-example">First useful example</a></h2>
 <p>This example parses a translation unit and counts top-level entries:</p>
-<pre class="playground"><code class="language-rust">use pac::driver::{parse, Config};
+<pre class="playground"><code class="language-rust">use parc::driver::{parse, Config};
 
-fn main() -&gt; Result&lt;(), pac::driver::Error&gt; {
+fn main() -&gt; Result&lt;(), parc::driver::Error&gt; {
     let parsed = parse(&amp;Config::default(), "examples/header.h")?;
 
     for (i, item) in parsed.unit.0.iter().enumerate() {
@@ -309,8 +308,8 @@ fn main() -&gt; Result&lt;(), pac::driver::Error&gt; {
 }</code></pre>
 <h2 id="first-fragment-example"><a class="header" href="#first-fragment-example">First fragment example</a></h2>
 <p>If you only need one declaration or statement, the direct parser API is faster to wire in:</p>
-<pre class="playground"><code class="language-rust">use pac::driver::Flavor;
-use pac::parse;
+<pre class="playground"><code class="language-rust">use parc::driver::Flavor;
+use parc::parse;
 
 fn main() {
     let decl = parse::declaration("static const int answer = 42;", Flavor::StdC11).unwrap();
@@ -348,7 +347,7 @@ the right API.</p>
 <p>Use this when your source depends on <code>#include</code>, <code>#define</code>, or compiler predefined macros.</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::{parse, Config};
+</span>use parc::driver::{parse, Config};
 
 let config = Config::default();
 let parsed = parse(&amp;config, "src/main.c")?;
@@ -362,7 +361,7 @@ let parsed = parse(&amp;config, "src/main.c")?;
 <p>Use this when another tool already ran preprocessing and you only want PAC to parse.</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::{parse_preprocessed, Config};
+</span>use parc::driver::{parse_preprocessed, Config};
 
 let config = Config::default();
 let source = r#"
@@ -381,11 +380,11 @@ let parsed = parse_preprocessed(&amp;config, source)?;
 <li>reproducing parse bugs from stored <code>.i</code> files</li>
 </ul>
 <h2 id="parse-a-fragment"><a class="header" href="#parse-a-fragment">Parse a fragment</a></h2>
-<p>Use <code>pac::parse</code> when you are not dealing with a whole file.</p>
+<p>Use <code>parc::parse</code> when you are not dealing with a whole file.</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::Flavor;
-use pac::parse;
+</span>use parc::driver::Flavor;
+use parc::parse;
 
 let expr = parse::expression("ptr-&gt;len + 1", Flavor::GnuC11)?;
 let decl = parse::declaration("unsigned long flags;", Flavor::StdC11)?;
@@ -407,9 +406,9 @@ let stmt = parse::statement("if (ok) return 1;", Flavor::StdC11)?;
 <p>Example outline:</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::{parse, Config};
-use pac::visit::{self, Visit};
-use pac::{ast, span};
+</span>use parc::driver::{parse, Config};
+use parc::visit::{self, Visit};
+use parc::{ast, span};
 
 struct FunctionCounter {
     count: usize,
@@ -430,22 +429,22 @@ let parsed = parse(&amp;Config::default(), "src/main.c")?;
 let mut counter = FunctionCounter { count: 0 };
 counter.visit_translation_unit(&amp;parsed.unit);
 println!("functions: {}", counter.count);
-<span class="boring">Ok::&lt;(), pac::driver::Error&gt;(())
+<span class="boring">Ok::&lt;(), parc::driver::Error&gt;(())
 </span><span class="boring">}</span></code></pre>
 <h2 id="debug-the-parse-tree"><a class="header" href="#debug-the-parse-tree">Debug the parse tree</a></h2>
 <p>Use the printer when you need a human-readable structural dump:</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::{parse, Config};
-use pac::print::Printer;
-use pac::visit::Visit;
+</span>use parc::driver::{parse, Config};
+use parc::print::Printer;
+use parc::visit::Visit;
 
 let parsed = parse(&amp;Config::default(), "src/main.c")?;
 
 let mut out = String::new();
 Printer::new(&amp;mut out).visit_translation_unit(&amp;parsed.unit);
 println!("{}", out);
-<span class="boring">Ok::&lt;(), pac::driver::Error&gt;(())
+<span class="boring">Ok::&lt;(), parc::driver::Error&gt;(())
 </span><span class="boring">}</span></code></pre>
 <h2 id="rule-of-thumb"><a class="header" href="#rule-of-thumb">Rule of thumb</a></h2>
 <ul>
@@ -485,20 +484,20 @@ pub struct Parse {
 <h2 id="basic-file-parsing"><a class="header" href="#basic-file-parsing">Basic file parsing</a></h2>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::{parse, Config};
+</span>use parc::driver::{parse, Config};
 
 let config = Config::default();
 let parsed = parse(&amp;config, "examples/demo.c")?;
 
 println!("preprocessed bytes: {}", parsed.source.len());
 println!("top-level nodes: {}", parsed.unit.0.len());
-<span class="boring">Ok::&lt;(), pac::driver::Error&gt;(())
+<span class="boring">Ok::&lt;(), parc::driver::Error&gt;(())
 </span><span class="boring">}</span></code></pre>
 <h2 id="configuring-the-preprocessor"><a class="header" href="#configuring-the-preprocessor">Configuring the preprocessor</a></h2>
 <p>You can override both the preprocessor executable and its arguments.</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::{parse, Config, Flavor};
+</span>use parc::driver::{parse, Config, Flavor};
 
 let config = Config {
     cpp_command: "gcc".into(),
@@ -512,7 +511,7 @@ let config = Config {
 };
 
 let parsed = parse(&amp;config, "src/input.c")?;
-<span class="boring">Ok::&lt;(), pac::driver::Error&gt;(())
+<span class="boring">Ok::&lt;(), parc::driver::Error&gt;(())
 </span><span class="boring">}</span></code></pre>
 <p>This is the place to inject:</p>
 <ul>
@@ -524,7 +523,7 @@ let parsed = parse(&amp;config, "src/input.c")?;
 <p>The convenience constructors also select parser flavor:</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::Config;
+</span>use parc::driver::Config;
 
 let gcc = Config::with_gcc();     // gcc -E, GNU flavor
 let clang = Config::with_clang(); // clang -E, Clang flavor
@@ -535,7 +534,7 @@ preprocessor.</p>
 <p>If you already have <code>.i</code>-style content, skip <code>parse</code> and call <code>parse_preprocessed</code>.</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::{parse_preprocessed, Config};
+</span>use parc::driver::{parse_preprocessed, Config};
 
 let source = r#"
 <span class="boring">1 "sample.i"
@@ -546,13 +545,13 @@ count_t next(count_t x) { return x + 1; }
 
 let parsed = parse_preprocessed(&amp;Config::default(), source)?;
 println!("{}", parsed.unit.0.len());
-<span class="boring">Ok::&lt;(), pac::driver::SyntaxError&gt;(())
+<span class="boring">Ok::&lt;(), parc::driver::SyntaxError&gt;(())
 </span><span class="boring">}</span></code></pre>
 <h2 id="error-model"><a class="header" href="#error-model">Error model</a></h2>
 <p><code>driver::parse</code> returns:</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>Result&lt;Parse, pac::driver::Error&gt;
+</span>Result&lt;Parse, parc::driver::Error&gt;
 <span class="boring">}</span></code></pre>
 <p>The error variants are:</p>
 <ul>
@@ -569,7 +568,7 @@ println!("{}", parsed.unit.0.len());
 <p>Example:</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::{parse_preprocessed, Config};
+</span>use parc::driver::{parse_preprocessed, Config};
 
 let broken = "int main( { return 0; }".to_string();
 match parse_preprocessed(&amp;Config::default(), broken) {
@@ -587,13 +586,13 @@ original file and include stack.</p>
 <code>gcc</code> or <code>clang</code> binary. Use <code>parse_builtin</code> instead of <code>parse</code>:</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::{parse_builtin, Config};
+</span>use parc::driver::{parse_builtin, Config};
 use std::path::Path;
 
 let config = Config::with_gcc();
 let include_paths = vec![Path::new("/usr/include")];
 let parsed = parse_builtin(&amp;config, "src/input.c", &amp;include_paths)?;
-<span class="boring">Ok::&lt;(), pac::driver::Error&gt;(())
+<span class="boring">Ok::&lt;(), parc::driver::Error&gt;(())
 </span><span class="boring">}</span></code></pre>
 <p>The built-in preprocessor supports:</p>
 <ul>
@@ -609,14 +608,14 @@ let parsed = parse_builtin(&amp;config, "src/input.c", &amp;include_paths)?;
 <p>To extract all <code>#define</code> macros from a C file (equivalent to <code>gcc -dD -E</code>):</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::capture_macros;
+</span>use parc::driver::capture_macros;
 use std::path::Path;
 
 let macros = capture_macros("src/input.c", &amp;[Path::new("/usr/include")])?;
 for (name, value) in &amp;macros {
     println!("#define {} {}", name, value);
 }
-<span class="boring">Ok::&lt;(), pac::driver::Error&gt;(())
+<span class="boring">Ok::&lt;(), parc::driver::Error&gt;(())
 </span><span class="boring">}</span></code></pre>
 <p>This returns all macros active after preprocessing, including predefined target
 macros and macros from included headers.</p>
@@ -629,7 +628,7 @@ macros and macros from included headers.</p>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="built-in-preprocessor-1"><a class="header" href="#built-in-preprocessor-1">Built-in Preprocessor</a></h1>
-<p>PAC includes a complete built-in C preprocessor in the <code>pac::preprocess</code> module.
+<p>PAC includes a complete built-in C preprocessor in the <code>parc::preprocess</code> module.
 This eliminates the runtime dependency on <code>gcc</code> or <code>clang</code> for preprocessing.</p>
 <h2 id="architecture"><a class="header" href="#architecture">Architecture</a></h2>
 <p>The preprocessor is split into focused modules:</p>
@@ -653,7 +652,7 @@ This eliminates the runtime dependency on <code>gcc</code> or <code>clang</code>
 <h2 id="quick-start"><a class="header" href="#quick-start">Quick start</a></h2>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::preprocess::preprocess;
+</span>use parc::preprocess::preprocess;
 
 let output = preprocess("#define X 42\nint a = X;\n");
 // output.tokens contains the expanded token stream
@@ -692,7 +691,7 @@ let output = preprocess("#define X 42\nint a = X;\n");
 <h2 id="include-resolution"><a class="header" href="#include-resolution">Include resolution</a></h2>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::preprocess::{IncludeResolver, Processor};
+</span>use parc::preprocess::{IncludeResolver, Processor};
 
 let mut resolver = IncludeResolver::new();
 resolver.add_system_path("/usr/include");
@@ -716,7 +715,7 @@ let result = resolver.preprocess_file(
 <p>Target-specific macros are available for common platforms:</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::preprocess::{MacroTable, Target, define_target_macros};
+</span>use parc::preprocess::{MacroTable, Target, define_target_macros};
 
 let mut table = MacroTable::new();
 define_target_macros(&amp;mut table, &amp;Target::host());
@@ -738,14 +737,14 @@ define_target_macros(&amp;mut table, &amp;Target::host());
 </ul>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="source-ir"><a class="header" href="#source-ir">Source IR</a></h1>
-<p>The <code>pac::ir</code> module defines the durable intermediate representation produced
+<p>The <code>parc::ir</code> module defines the durable intermediate representation produced
 by the PARC frontend. It is the primary contract between the parser/extractor
 and downstream consumers (LINC, GERC).</p>
 <h2 id="design-principles"><a class="header" href="#design-principles">Design Principles</a></h2>
 <ul>
 <li><strong>Smaller than the AST</strong>: only normalized declarations, not the full syntax tree</li>
 <li><strong>Serializable</strong>: all types derive <code>serde::Serialize</code> and <code>serde::Deserialize</code></li>
-<li><strong>Parser-agnostic</strong>: downstream consumers should depend on <code>pac::ir</code>, not <code>pac::ast</code></li>
+<li><strong>Parser-agnostic</strong>: downstream consumers should depend on <code>parc::ir</code>, not <code>parc::ast</code></li>
 <li><strong>No link/binary concerns</strong>: no ABI probing, no library paths, no symbol validation</li>
 </ul>
 <h2 id="key-types"><a class="header" href="#key-types">Key Types</a></h2>
@@ -753,7 +752,7 @@ and downstream consumers (LINC, GERC).</p>
 <p>The top-level container:</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::ir::SourcePackage;
+</span>use parc::ir::SourcePackage;
 
 let pkg = SourcePackage::new();
 assert!(pkg.is_empty());
@@ -792,7 +791,7 @@ TypedefRef, RecordRef, EnumRef, Opaque
 <p>All IR types support JSON roundtrip:</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::ir::SourcePackage;
+</span>use parc::ir::SourcePackage;
 
 let pkg = SourcePackage::new();
 let json = serde_json::to_string_pretty(&amp;pkg).unwrap();
@@ -817,12 +816,12 @@ assert_eq!(pkg, back);
 <span class="boring">}</span></code></pre>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="extraction"><a class="header" href="#extraction">Extraction</a></h1>
-<p>The <code>pac::extract</code> module converts a parsed C AST into the normalized
+<p>The <code>parc::extract</code> module converts a parsed C AST into the normalized
 <code>SourcePackage</code> IR. It handles all declaration families.</p>
 <h2 id="quick-start-1"><a class="header" href="#quick-start-1">Quick Start</a></h2>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::extract;
+</span>use parc::extract;
 
 let source = r#"
     typedef unsigned long size_t;
@@ -840,38 +839,38 @@ assert_eq!(pkg.type_alias_count(), 1);
 <p>Parse and extract in one step using GNU C11 flavor:</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>let pkg = pac::extract::extract_from_source("int foo(void);").unwrap();
+</span>let pkg = parc::extract::extract_from_source("int foo(void);").unwrap();
 <span class="boring">}</span></code></pre>
 <h3 id="parse_and_extract"><a class="header" href="#parse_and_extract"><code>parse_and_extract</code></a></h3>
 <p>Parse and extract with a specific flavor:</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>let pkg = pac::extract::parse_and_extract(
+</span>let pkg = parc::extract::parse_and_extract(
     "int foo(void);",
-    pac::driver::Flavor::StdC11,
+    parc::driver::Flavor::StdC11,
 ).unwrap();
 <span class="boring">}</span></code></pre>
 <h3 id="extract_from_translation_unit"><a class="header" href="#extract_from_translation_unit"><code>extract_from_translation_unit</code></a></h3>
 <p>Extract from an already-parsed AST:</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>let unit = pac::parse::translation_unit("int foo(void);", pac::driver::Flavor::StdC11).unwrap();
-let pkg = pac::extract::extract_from_translation_unit(&amp;unit, Some("test.h".into()));
+</span>let unit = parc::parse::translation_unit("int foo(void);", parc::driver::Flavor::StdC11).unwrap();
+let pkg = parc::extract::extract_from_translation_unit(&amp;unit, Some("test.h".into()));
 <span class="boring">}</span></code></pre>
 <h3 id="parse_and_extract_resilient"><a class="header" href="#parse_and_extract_resilient"><code>parse_and_extract_resilient</code></a></h3>
 <p>Parse with error recovery and extract what’s possible:</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>let pkg = pac::extract::parse_and_extract_resilient(
+</span>let pkg = parc::extract::parse_and_extract_resilient(
     "int valid;\n@@@bad@@@;\nint also_valid;",
-    pac::driver::Flavor::StdC11,
+    parc::driver::Flavor::StdC11,
 );
 <span class="boring">}</span></code></pre>
 <h3 id="extract_file"><a class="header" href="#extract_file"><code>extract_file</code></a></h3>
 <p>Read a file from disk and extract:</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>let pkg = pac::extract::extract_file("path/to/header.h", pac::driver::Flavor::GnuC11).unwrap();
+</span>let pkg = parc::extract::extract_file("path/to/header.h", parc::driver::Flavor::GnuC11).unwrap();
 assert!(pkg.source_path.is_some());
 <span class="boring">}</span></code></pre>
 <h2 id="what-gets-extracted"><a class="header" href="#what-gets-extracted">What Gets Extracted</a></h2>
@@ -906,12 +905,12 @@ assert!(pkg.source_path.is_some());
 </ul>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="header-scanning"><a class="header" href="#header-scanning">Header Scanning</a></h1>
-<p>The <code>pac::scan</code> module provides end-to-end header scanning: preprocess
+<p>The <code>parc::scan</code> module provides end-to-end header scanning: preprocess
 C headers and extract a <code>SourcePackage</code> in one step.</p>
 <h2 id="quick-start-2"><a class="header" href="#quick-start-2">Quick Start</a></h2>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::scan::{ScanConfig, scan_headers};
+</span>use parc::scan::{ScanConfig, scan_headers};
 
 let config = ScanConfig::new()
     .entry_header("api.h")
@@ -945,7 +944,7 @@ let pkg = result.package;
 <p>Uses <code>gcc -E</code> or <code>clang -E</code> to preprocess headers. Requires the
 compiler to be installed. Supports all system headers.</p>
 <h3 id="built-in"><a class="header" href="#built-in">Built-in</a></h3>
-<p>Uses <code>pac::preprocess</code> for self-contained headers that don’t need
+<p>Uses <code>parc::preprocess</code> for self-contained headers that don’t need
 system includes. No external compiler required.</p>
 <h2 id="scanresult"><a class="header" href="#scanresult">ScanResult</a></h2>
 <p>The scan produces:</p>
@@ -955,14 +954,14 @@ system includes. No external compiler required.</p>
 </ul>
 <h2 id="intake"><a class="header" href="#intake">Intake</a></h2>
 <p>For already-preprocessed source (e.g., output of <code>gcc -E</code>), use
-<code>pac::intake::PreprocessedInput</code>:</p>
+<code>parc::intake::PreprocessedInput</code>:</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::intake::PreprocessedInput;
+</span>use parc::intake::PreprocessedInput;
 
 let input = PreprocessedInput::from_string("int foo(void);")
     .with_path("output.i")
-    .with_flavor(pac::driver::Flavor::GnuC11);
+    .with_flavor(parc::driver::Flavor::GnuC11);
 
 let pkg = input.extract();
 <span class="boring">}</span></code></pre>
@@ -997,19 +996,19 @@ parse::translation_unit(source, flavor)
 <h2 id="parse-an-expression"><a class="header" href="#parse-an-expression">Parse an expression</a></h2>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::Flavor;
-use pac::parse;
+</span>use parc::driver::Flavor;
+use parc::parse;
 
 let expr = parse::expression("value + 1 * scale", Flavor::StdC11)?;
 println!("{:#?}", expr);
-<span class="boring">Ok::&lt;(), pac::parse::ParseError&gt;(())
+<span class="boring">Ok::&lt;(), parc::parse::ParseError&gt;(())
 </span><span class="boring">}</span></code></pre>
 <p>The return type is <code>Box&lt;Node&lt;Expression&gt;&gt;</code>, so you get both the expression and its span.</p>
 <h2 id="parse-a-declaration"><a class="header" href="#parse-a-declaration">Parse a declaration</a></h2>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::Flavor;
-use pac::parse;
+</span>use parc::driver::Flavor;
+use parc::parse;
 
 let decl = parse::declaration(
     "static const unsigned long mask = 0xff;",
@@ -1017,7 +1016,7 @@ let decl = parse::declaration(
 )?;
 
 println!("{:#?}", decl.node);
-<span class="boring">Ok::&lt;(), pac::parse::ParseError&gt;(())
+<span class="boring">Ok::&lt;(), parc::parse::ParseError&gt;(())
 </span><span class="boring">}</span></code></pre>
 <p>Declarations are useful when you want to inspect:</p>
 <ul>
@@ -1029,8 +1028,8 @@ println!("{:#?}", decl.node);
 <h2 id="parse-a-statement"><a class="header" href="#parse-a-statement">Parse a statement</a></h2>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::Flavor;
-use pac::parse;
+</span>use parc::driver::Flavor;
+use parc::parse;
 
 let stmt = parse::statement(
     "for (int i = 0; i &lt; 4; i++) total += i;",
@@ -1038,13 +1037,13 @@ let stmt = parse::statement(
 )?;
 
 println!("{:#?}", stmt.node);
-<span class="boring">Ok::&lt;(), pac::parse::ParseError&gt;(())
+<span class="boring">Ok::&lt;(), parc::parse::ParseError&gt;(())
 </span><span class="boring">}</span></code></pre>
 <h2 id="parse-a-whole-translation-unit"><a class="header" href="#parse-a-whole-translation-unit">Parse a whole translation unit</a></h2>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::Flavor;
-use pac::parse;
+</span>use parc::driver::Flavor;
+use parc::parse;
 
 let source = r#"
 typedef int count_t;
@@ -1053,14 +1052,14 @@ count_t inc(count_t x) { return x + 1; }
 
 let unit = parse::translation_unit(source, Flavor::StdC11)?;
 println!("items: {}", unit.0.len());
-<span class="boring">Ok::&lt;(), pac::parse::ParseError&gt;(())
+<span class="boring">Ok::&lt;(), parc::parse::ParseError&gt;(())
 </span><span class="boring">}</span></code></pre>
 <h2 id="flavor-sensitive-parsing"><a class="header" href="#flavor-sensitive-parsing">Flavor-sensitive parsing</a></h2>
 <p>GNU or Clang syntax only parses when you select a compatible flavor.</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::Flavor;
-use pac::parse;
+</span>use parc::driver::Flavor;
+use parc::parse;
 
 let gnu_expr = "({ int x = 1; x + 2; })";
 assert!(parse::expression(gnu_expr, Flavor::GnuC11).is_ok());
@@ -1249,13 +1248,13 @@ everything into one generic node list.</p>
 <li>free functions like <code>visit_expression</code> and <code>visit_function_definition</code> that recurse into children</li>
 </ul>
 <h2 id="the-important-rule"><a class="header" href="#the-important-rule">The important rule</a></h2>
-<p>When you override a method, call the free function from <code>pac::visit</code>, not the trait method on
+<p>When you override a method, call the free function from <code>parc::visit</code>, not the trait method on
 <code>self</code>. Calling <code>self.visit_*</code> from inside the override will recurse back into your override.</p>
 <h2 id="count-function-definitions"><a class="header" href="#count-function-definitions">Count function definitions</a></h2>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::{ast, span, visit};
-use pac::visit::Visit;
+</span>use parc::{ast, span, visit};
+use parc::visit::Visit;
 
 struct FunctionCounter {
     count: usize,
@@ -1275,8 +1274,8 @@ impl&lt;'ast&gt; Visit&lt;'ast&gt; for FunctionCounter {
 <h2 id="collect-identifiers-from-expressions"><a class="header" href="#collect-identifiers-from-expressions">Collect identifiers from expressions</a></h2>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::{ast, span, visit};
-use pac::visit::Visit;
+</span>use parc::{ast, span, visit};
+use parc::visit::Visit;
 
 struct IdentifierCollector {
     names: Vec&lt;String&gt;,
@@ -1292,8 +1291,8 @@ impl&lt;'ast&gt; Visit&lt;'ast&gt; for IdentifierCollector {
 <h2 id="use-the-visitor"><a class="header" href="#use-the-visitor">Use the visitor</a></h2>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::{parse, Config};
-use pac::visit::Visit;
+</span>use parc::driver::{parse, Config};
+use parc::visit::Visit;
 
 let parsed = parse(&amp;Config::default(), "examples/sample.c")?;
 
@@ -1301,7 +1300,7 @@ let mut counter = FunctionCounter { count: 0 };
 counter.visit_translation_unit(&amp;parsed.unit);
 
 println!("functions: {}", counter.count);
-<span class="boring">Ok::&lt;(), pac::driver::Error&gt;(())
+<span class="boring">Ok::&lt;(), parc::driver::Error&gt;(())
 </span><span class="boring">}</span></code></pre>
 <h2 id="when-to-override-which-method"><a class="header" href="#when-to-override-which-method">When to override which method</a></h2>
 <ul>
@@ -1385,7 +1384,7 @@ preprocessing has inserted line markers or expanded includes.</p>
 <h2 id="basic-example"><a class="header" href="#basic-example">Basic example</a></h2>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::loc::get_location_for_offset;
+</span>use parc::loc::get_location_for_offset;
 
 let src = "# 1 \"main.c\"\nint value;\n";
 let (loc, includes) = get_location_for_offset(src, 18);
@@ -1403,8 +1402,8 @@ assert!(includes.is_empty());
 <p>Example:</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::{parse, Config};
-use pac::loc::get_location_for_offset;
+</span>use parc::driver::{parse, Config};
+use parc::loc::get_location_for_offset;
 
 let parsed = parse(&amp;Config::default(), "examples/sample.c")?;
 
@@ -1413,7 +1412,7 @@ if let Some(first) = parsed.unit.0.first() {
     println!("first item starts in {}:{}", loc.file, loc.line);
     println!("include depth: {}", include_stack.len());
 }
-<span class="boring">Ok::&lt;(), pac::driver::Error&gt;(())
+<span class="boring">Ok::&lt;(), parc::driver::Error&gt;(())
 </span><span class="boring">}</span></code></pre>
 <h2 id="syntaxerrorget_location"><a class="header" href="#syntaxerrorget_location"><code>SyntaxError::get_location</code></a></h2>
 <p>For parser failures in the driver path, <code>driver::SyntaxError</code> already exposes:</p>
@@ -1533,7 +1532,7 @@ Uses both strict parsing (error expected) and resilient parsing (recovery expect
 contract is sufficient for downstream consumers. These test iteration patterns, type
 navigation, serialization, filtering, merging, and programmatic construction.</p>
 <h2 id="differential-tests"><a class="header" href="#differential-tests">Differential tests</a></h2>
-<p><code>src/tests/differential.rs</code> documents the known differences between pac extraction and
+<p><code>src/tests/differential.rs</code> documents the known differences between parc extraction and
 bic extraction, ensuring behavioral equivalence on standard declarations and explicitly
 documenting intentional divergences (pointer model, no ABI fields, typedef chain
 preservation).</p>
@@ -1561,8 +1560,8 @@ guards, include directory resolution, and metadata population.</p>
 <p>The <code>parse</code> module returns <code>ParseError</code>:</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::Flavor;
-use pac::parse;
+</span>use parc::driver::Flavor;
+use parc::parse;
 
 match parse::expression("a +", Flavor::StdC11) {
     Ok(_) =&gt; {}
@@ -1584,7 +1583,7 @@ match parse::expression("a +", Flavor::StdC11) {
 <p>The driver adds preprocessor context on top:</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::{parse, Config, Error};
+</span>use parc::driver::{parse, Config, Error};
 
 match parse(&amp;Config::default(), "broken.c") {
     Ok(_) =&gt; {}
@@ -1608,16 +1607,16 @@ human-readable error message.</p>
 <p><code>print::Printer</code> is a visitor that renders the tree as an indented text dump.</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::{parse, Config};
-use pac::print::Printer;
-use pac::visit::Visit;
+</span>use parc::driver::{parse, Config};
+use parc::print::Printer;
+use parc::visit::Visit;
 
 let parsed = parse(&amp;Config::default(), "examples/sample.c")?;
 
 let mut out = String::new();
 Printer::new(&amp;mut out).visit_translation_unit(&amp;parsed.unit);
 println!("{}", out);
-<span class="boring">Ok::&lt;(), pac::driver::Error&gt;(())
+<span class="boring">Ok::&lt;(), parc::driver::Error&gt;(())
 </span><span class="boring">}</span></code></pre>
 <p>The printer is ideal when:</p>
 <ul>
@@ -1754,11 +1753,11 @@ That split helps with three things:</p>
 prefer the consumer-facing modules unless the chapter is specifically contributor-oriented.</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="api-contract"><a class="header" href="#api-contract">API Contract</a></h1>
-<p>This chapter records the intended public consumer surface of <code>pac</code>.</p>
+<p>This chapter records the intended public consumer surface of <code>parc</code>.</p>
 <p>It is not a blanket promise about every future change. It is the current explicit guidance for how
 downstream tools should integrate with the crate without depending on internal parser details.</p>
 <h2 id="first-principle"><a class="header" href="#first-principle">First Principle</a></h2>
-<p><code>pac</code> is a C language frontend: preprocessing, parsing, and source-level semantic extraction.</p>
+<p><code>parc</code> is a C language frontend: preprocessing, parsing, and source-level semantic extraction.</p>
 <p>The intended downstream pattern is:</p>
 <ol>
 <li>scan headers or parse source via <code>driver</code>, <code>scan</code>, or <code>parse</code></li>
@@ -1766,7 +1765,7 @@ downstream tools should integrate with the crate without depending on internal p
 <li>consume the <code>SourcePackage</code> IR from <code>ir</code></li>
 <li>use <code>visit</code>, <code>span</code>, and <code>loc</code> to analyze AST-level details if needed</li>
 </ol>
-<p>Downstream consumers (LINC, GERC) should depend on <code>pac::ir</code>, not on <code>pac::ast</code> directly.</p>
+<p>Downstream consumers (LINC, GERC) should depend on <code>parc::ir</code>, not on <code>parc::ast</code> directly.</p>
 <h2 id="preferred-public-surface"><a class="header" href="#preferred-public-surface">Preferred public surface</a></h2>
 <p>These are the main consumer-facing modules:</p>
 <div class="table-wrapper">
@@ -1775,18 +1774,18 @@ downstream tools should integrate with the crate without depending on internal p
 <tr><th>Module</th><th>Role</th><th>Current expectation</th></tr>
 </thead>
 <tbody>
-<tr><td><code>pac::ir</code></td><td>source-level IR (<code>SourcePackage</code>)</td><td><strong>preferred data contract</strong></td></tr>
-<tr><td><code>pac::extract</code></td><td>declaration extraction from AST</td><td>preferred extraction entry point</td></tr>
-<tr><td><code>pac::scan</code></td><td>header scanning (preprocess + extract)</td><td>preferred high-level entry point</td></tr>
-<tr><td><code>pac::intake</code></td><td>preprocessed source intake</td><td>preferred for already-preprocessed source</td></tr>
-<tr><td><code>pac::driver</code></td><td>parse files and preprocessed source</td><td>preferred parse entry point</td></tr>
-<tr><td><code>pac::preprocess</code></td><td>built-in C preprocessor</td><td>preferred preprocessing entry point</td></tr>
-<tr><td><code>pac::parse</code></td><td>parse string fragments directly</td><td>preferred low-level entry point</td></tr>
-<tr><td><code>pac::ast</code></td><td>typed syntax tree</td><td>internal data model</td></tr>
-<tr><td><code>pac::visit</code></td><td>recursive traversal hooks</td><td>preferred traversal API</td></tr>
-<tr><td><code>pac::span</code></td><td>byte-range metadata</td><td>preferred location primitive</td></tr>
-<tr><td><code>pac::loc</code></td><td>map offsets back to files/lines</td><td>preferred diagnostics helper</td></tr>
-<tr><td><code>pac::print</code></td><td>AST debug dumping</td><td>preferred inspection helper</td></tr>
+<tr><td><code>parc::ir</code></td><td>source-level IR (<code>SourcePackage</code>)</td><td><strong>preferred data contract</strong></td></tr>
+<tr><td><code>parc::extract</code></td><td>declaration extraction from AST</td><td>preferred extraction entry point</td></tr>
+<tr><td><code>parc::scan</code></td><td>header scanning (preprocess + extract)</td><td>preferred high-level entry point</td></tr>
+<tr><td><code>parc::intake</code></td><td>preprocessed source intake</td><td>preferred for already-preprocessed source</td></tr>
+<tr><td><code>parc::driver</code></td><td>parse files and preprocessed source</td><td>preferred parse entry point</td></tr>
+<tr><td><code>parc::preprocess</code></td><td>built-in C preprocessor</td><td>preferred preprocessing entry point</td></tr>
+<tr><td><code>parc::parse</code></td><td>parse string fragments directly</td><td>preferred low-level entry point</td></tr>
+<tr><td><code>parc::ast</code></td><td>typed syntax tree</td><td>internal data model</td></tr>
+<tr><td><code>parc::visit</code></td><td>recursive traversal hooks</td><td>preferred traversal API</td></tr>
+<tr><td><code>parc::span</code></td><td>byte-range metadata</td><td>preferred location primitive</td></tr>
+<tr><td><code>parc::loc</code></td><td>map offsets back to files/lines</td><td>preferred diagnostics helper</td></tr>
+<tr><td><code>parc::print</code></td><td>AST debug dumping</td><td>preferred inspection helper</td></tr>
 </tbody>
 </table>
 </div>
@@ -1801,7 +1800,7 @@ downstream tools should integrate with the crate without depending on internal p
 <p>If a downstream tool depends directly on how those modules work, it is probably coupling itself to
 implementation details rather than the intended library boundary.</p>
 <h2 id="normative-consumer-rules"><a class="header" href="#normative-consumer-rules">Normative consumer rules</a></h2>
-<p>If you are building on top of <code>pac</code>, the safest current rules are:</p>
+<p>If you are building on top of <code>parc</code>, the safest current rules are:</p>
 <ol>
 <li>use <code>driver</code> when preprocessing matters</li>
 <li>use <code>parse::*</code> for fragment parsing or already-controlled text inputs</li>
@@ -1863,11 +1862,11 @@ contract.</p>
 <h2 id="workflow-1-parse-a-real-c-file"><a class="header" href="#workflow-1-parse-a-real-c-file">Workflow 1: Parse A Real C File</a></h2>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::{parse, Config};
+</span>use parc::driver::{parse, Config};
 
 let parsed = parse(&amp;Config::default(), "include/demo.h")?;
 println!("items: {}", parsed.unit.0.len());
-<span class="boring">Ok::&lt;(), pac::driver::Error&gt;(())
+<span class="boring">Ok::&lt;(), parc::driver::Error&gt;(())
 </span><span class="boring">}</span></code></pre>
 <p>This is the baseline path when:</p>
 <ul>
@@ -1879,11 +1878,11 @@ println!("items: {}", parsed.unit.0.len());
 <h2 id="workflow-2-parse-a-preprocessed-snapshot"><a class="header" href="#workflow-2-parse-a-preprocessed-snapshot">Workflow 2: Parse A Preprocessed Snapshot</a></h2>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::{parse_preprocessed, Config};
+</span>use parc::driver::{parse_preprocessed, Config};
 
 let source = std::fs::read_to_string("snapshots/demo.i").unwrap();
 let parsed = parse_preprocessed(&amp;Config::default(), source)?;
-<span class="boring">Ok::&lt;(), pac::driver::SyntaxError&gt;(())
+<span class="boring">Ok::&lt;(), parc::driver::SyntaxError&gt;(())
 </span><span class="boring">}</span></code></pre>
 <p>Use this when:</p>
 <ul>
@@ -1895,12 +1894,12 @@ let parsed = parse_preprocessed(&amp;Config::default(), source)?;
 <h2 id="workflow-3-parse-a-fragment-in-tests"><a class="header" href="#workflow-3-parse-a-fragment-in-tests">Workflow 3: Parse A Fragment In Tests</a></h2>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::Flavor;
-use pac::parse;
+</span>use parc::driver::Flavor;
+use parc::parse;
 
 let decl = parse::declaration("typedef unsigned long word_t;", Flavor::StdC11)?;
 let expr = parse::expression("ptr-&gt;field + 1", Flavor::GnuC11)?;
-<span class="boring">Ok::&lt;(), pac::parse::ParseError&gt;(())
+<span class="boring">Ok::&lt;(), parc::parse::ParseError&gt;(())
 </span><span class="boring">}</span></code></pre>
 <p>This is the right workflow for:</p>
 <ul>
@@ -1911,9 +1910,9 @@ let expr = parse::expression("ptr-&gt;field + 1", Flavor::GnuC11)?;
 <h2 id="workflow-4-build-a-syntax-analyzer"><a class="header" href="#workflow-4-build-a-syntax-analyzer">Workflow 4: Build A Syntax Analyzer</a></h2>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::{parse, Config};
-use pac::visit::{self, Visit};
-use pac::{ast, span};
+</span>use parc::driver::{parse, Config};
+use parc::visit::{self, Visit};
+use parc::{ast, span};
 
 struct ReturnCounter {
     count: usize,
@@ -1932,7 +1931,7 @@ let parsed = parse(&amp;Config::default(), "src/main.c")?;
 let mut counter = ReturnCounter { count: 0 };
 counter.visit_translation_unit(&amp;parsed.unit);
 println!("return statements: {}", counter.count);
-<span class="boring">Ok::&lt;(), pac::driver::Error&gt;(())
+<span class="boring">Ok::&lt;(), parc::driver::Error&gt;(())
 </span><span class="boring">}</span></code></pre>
 <p>This is the normal PAC analyzer pattern:</p>
 <ol>
@@ -1944,8 +1943,8 @@ println!("return statements: {}", counter.count);
 <h2 id="workflow-5-build-diagnostics-with-real-file-locations"><a class="header" href="#workflow-5-build-diagnostics-with-real-file-locations">Workflow 5: Build Diagnostics With Real File Locations</a></h2>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::{parse, Config};
-use pac::loc::get_location_for_offset;
+</span>use parc::driver::{parse, Config};
+use parc::loc::get_location_for_offset;
 
 let parsed = parse(&amp;Config::default(), "src/main.c")?;
 
@@ -1953,24 +1952,24 @@ for item in &amp;parsed.unit.0 {
     let (loc, _) = get_location_for_offset(&amp;parsed.source, item.span.start);
     println!("top-level item starts at {}:{}", loc.file, loc.line);
 }
-<span class="boring">Ok::&lt;(), pac::driver::Error&gt;(())
+<span class="boring">Ok::&lt;(), parc::driver::Error&gt;(())
 </span><span class="boring">}</span></code></pre>
 <p>Use this when your users care about original file locations rather than raw byte offsets in the
 preprocessed stream.</p>
 <h2 id="workflow-6-debug-a-new-syntax-form"><a class="header" href="#workflow-6-debug-a-new-syntax-form">Workflow 6: Debug A New Syntax Form</a></h2>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::Flavor;
-use pac::parse;
-use pac::print::Printer;
-use pac::visit::Visit;
+</span>use parc::driver::Flavor;
+use parc::parse;
+use parc::print::Printer;
+use parc::visit::Visit;
 
 let expr = parse::expression("({ int x = 1; x + 1; })", Flavor::GnuC11)?;
 
 let mut out = String::new();
 Printer::new(&amp;mut out).visit_expression(&amp;expr.node, &amp;expr.span);
 println!("{}", out);
-<span class="boring">Ok::&lt;(), pac::parse::ParseError&gt;(())
+<span class="boring">Ok::&lt;(), parc::parse::ParseError&gt;(())
 </span><span class="boring">}</span></code></pre>
 <p>This is the most effective loop when exploring unfamiliar AST shapes.</p>
 <h2 id="workflow-7-regression-test-a-parse-failure"><a class="header" href="#workflow-7-regression-test-a-parse-failure">Workflow 7: Regression-Test A Parse Failure</a></h2>
@@ -1997,7 +1996,7 @@ println!("{}", out);
 <p>The <code>parse</code> module returns:</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>Result&lt;T, pac::parse::ParseError&gt;
+</span>Result&lt;T, parc::parse::ParseError&gt;
 <span class="boring">}</span></code></pre>
 <p><code>ParseError</code> includes:</p>
 <ul>
@@ -2016,7 +2015,7 @@ println!("{}", out);
 <p>The <code>driver</code> module returns:</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>Result&lt;pac::driver::Parse, pac::driver::Error&gt;
+</span>Result&lt;parc::driver::Parse, parc::driver::Error&gt;
 <span class="boring">}</span></code></pre>
 <p>That error enum has two branches:</p>
 <ul>
@@ -2057,8 +2056,8 @@ println!("{}", out);
 <h3 id="fragment-parsing"><a class="header" href="#fragment-parsing">Fragment parsing</a></h3>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::Flavor;
-use pac::parse;
+</span>use parc::driver::Flavor;
+use parc::parse;
 
 match parse::statement("if (x) {", Flavor::StdC11) {
     Ok(_) =&gt; {}
@@ -2070,7 +2069,7 @@ match parse::statement("if (x) {", Flavor::StdC11) {
 <h3 id="file-parsing"><a class="header" href="#file-parsing">File parsing</a></h3>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::{parse, Config, Error};
+</span>use parc::driver::{parse, Config, Error};
 
 match parse(&amp;Config::default(), "broken.c") {
     Ok(_) =&gt; {}
@@ -2090,8 +2089,8 @@ skips to the next synchronization point (<code>;</code> at file scope or <code>}
 parsing.</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::Flavor;
-use pac::parse;
+</span>use parc::driver::Flavor;
+use parc::parse;
 
 let tu = parse::translation_unit_resilient(source, Flavor::GnuC11);
 // tu.0 contains all successfully parsed declarations
@@ -2565,21 +2564,21 @@ on source, the book should say so explicitly in the same change.</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="migration-from-bic"><a class="header" href="#migration-from-bic">Migration From bic</a></h1>
 <p>This chapter documents how to migrate downstream consumers from <code>bic</code>’s frontend extraction
-to <code>pac</code>’s <code>SourcePackage</code> contract.</p>
+to <code>parc</code>’s <code>SourcePackage</code> contract.</p>
 <h2 id="why-migrate"><a class="header" href="#why-migrate">Why migrate</a></h2>
-<p><code>pac</code> now owns source-level declaration extraction. <code>bic</code>’s <code>extract.rs</code> was the legacy location
+<p><code>parc</code> now owns source-level declaration extraction. <code>bic</code>’s <code>extract.rs</code> was the legacy location
 for this logic. The canonical path is now:</p>
-<pre><code class="language-text">C headers  -&gt;  pac::scan / pac::extract  -&gt;  SourcePackage  -&gt;  downstream
+<pre><code class="language-text">C headers  -&gt;  parc::scan / parc::extract  -&gt;  SourcePackage  -&gt;  downstream
 </code></pre>
-<p><code>bic</code> should consume <code>pac::ir::SourcePackage</code> instead of owning its own extraction.</p>
+<p><code>bic</code> should consume <code>parc::ir::SourcePackage</code> instead of owning its own extraction.</p>
 <h2 id="type-mapping"><a class="header" href="#type-mapping">Type mapping</a></h2>
 <div class="table-wrapper">
 <table>
 <thead>
-<tr><th>bic type</th><th>pac type</th><th>Notes</th></tr>
+<tr><th>bic type</th><th>parc type</th><th>Notes</th></tr>
 </thead>
 <tbody>
-<tr><td><code>BindingPackage</code></td><td><code>SourcePackage</code></td><td>pac has no <code>layouts</code>, <code>link</code>, or <code>bic_version</code></td></tr>
+<tr><td><code>BindingPackage</code></td><td><code>SourcePackage</code></td><td>parc has no <code>layouts</code>, <code>link</code>, or <code>bic_version</code></td></tr>
 <tr><td><code>BindingItem</code></td><td><code>SourceItem</code></td><td>Same variant set</td></tr>
 <tr><td><code>BindingType</code></td><td><code>SourceType</code></td><td>Pointer model differs (see below)</td></tr>
 <tr><td><code>FunctionBinding</code></td><td><code>SourceFunction</code></td><td>Identical structure</td></tr>
@@ -2590,12 +2589,12 @@ for this logic. The canonical path is now:</p>
 <tr><td><code>TypeAliasBinding</code></td><td><code>SourceTypeAlias</code></td><td>No <code>canonical_resolution</code></td></tr>
 <tr><td><code>VariableBinding</code></td><td><code>SourceVariable</code></td><td>Identical structure</td></tr>
 <tr><td><code>UnsupportedItem</code></td><td><code>SourceUnsupported</code></td><td>Identical structure</td></tr>
-<tr><td><code>CallingConvention</code></td><td><code>CallingConvention</code></td><td>pac version includes <code>Unknown(String)</code></td></tr>
+<tr><td><code>CallingConvention</code></td><td><code>CallingConvention</code></td><td>parc version includes <code>Unknown(String)</code></td></tr>
 <tr><td><code>TypeQualifiers</code></td><td><code>TypeQualifiers</code></td><td>Identical structure</td></tr>
 <tr><td><code>BindingTarget</code></td><td><code>SourceTarget</code></td><td>Identical structure</td></tr>
 <tr><td><code>BindingInputs</code></td><td><code>SourceInputs</code></td><td>Identical structure</td></tr>
 <tr><td><code>BindingDefine</code></td><td><code>SourceDefine</code></td><td>Identical structure</td></tr>
-<tr><td><code>MacroBinding</code></td><td><code>SourceMacro</code></td><td>pac drops <code>function_like</code> and <code>category</code></td></tr>
+<tr><td><code>MacroBinding</code></td><td><code>SourceMacro</code></td><td>parc drops <code>function_like</code> and <code>category</code></td></tr>
 <tr><td><code>DeclarationProvenance</code></td><td><code>DeclarationProvenance</code></td><td>Identical structure</td></tr>
 <tr><td><code>MacroProvenance</code></td><td><code>MacroProvenance</code></td><td>Identical structure</td></tr>
 </tbody>
@@ -2611,7 +2610,7 @@ for this logic. The canonical path is now:</p>
     qualifiers: TypeQualifiers, // qualifiers on the pointer itself
 }
 <span class="boring">}</span></code></pre>
-<p>pac:</p>
+<p>parc:</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>Pointer {
@@ -2619,15 +2618,15 @@ for this logic. The canonical path is now:</p>
     qualifiers: TypeQualifiers, // is_const means pointee is const
 }
 <span class="boring">}</span></code></pre>
-<p>In pac, <code>qualifiers.is_const</code> on a <code>Pointer</code> indicates that the pointee is const-qualified.
+<p>In parc, <code>qualifiers.is_const</code> on a <code>Pointer</code> indicates that the pointee is const-qualified.
 Use <code>SourceType::const_ptr(inner)</code> and <code>SourceType::ptr(inner)</code> as constructors.</p>
-<h2 id="missing-fields-in-pac"><a class="header" href="#missing-fields-in-pac">Missing fields in pac</a></h2>
-<p>These bic fields are intentionally absent from pac because they belong to the link/ABI layer:</p>
+<h2 id="missing-fields-in-parc"><a class="header" href="#missing-fields-in-parc">Missing fields in parc</a></h2>
+<p>These bic fields are intentionally absent from parc because they belong to the link/ABI layer:</p>
 <ul>
 <li><code>FieldBinding.layout</code> (field offset) — use LINC probing</li>
 <li><code>RecordBinding.representation</code> — use LINC probing</li>
 <li><code>RecordBinding.abi_confidence</code> — use LINC validation</li>
-<li><code>TypeAliasBinding.canonical_resolution</code> — pac preserves <code>TypedefRef</code> chains</li>
+<li><code>TypeAliasBinding.canonical_resolution</code> — parc preserves <code>TypedefRef</code> chains</li>
 <li><code>BindingPackage.layouts</code> — use LINC probing</li>
 <li><code>BindingPackage.link</code> — use LINC link surface</li>
 <li><code>BindingPackage.effective_macro_environment</code> — use LINC macro analysis</li>
@@ -2648,15 +2647,15 @@ pkg.items = items;
 <p>After:</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::extract;
-use pac::ir::SourcePackage;
+</span>use parc::extract;
+use parc::ir::SourcePackage;
 
 let pkg = extract::extract_from_translation_unit(&amp;unit, Some("header.h".into()));
 <span class="boring">}</span></code></pre>
 <p>Or for end-to-end scanning:</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::scan::{ScanConfig, scan_headers};
+</span>use parc::scan::{ScanConfig, scan_headers};
 
 let config = ScanConfig::new()
     .entry_header("header.h")
@@ -2674,7 +2673,7 @@ The variant names are identical.</p>
 </span>// Before (bic)
 if let BindingType::Pointer { const_pointee: true, .. } = ty { ... }
 
-// After (pac)
+// After (parc)
 if let SourceType::Pointer { qualifiers, .. } = ty {
     if qualifiers.is_const { ... }
 }
@@ -2685,7 +2684,7 @@ if let SourceType::Pointer { qualifiers, .. } = ty {
 <h3 id="step-5-use-builder-for-programmatic-construction"><a class="header" href="#step-5-use-builder-for-programmatic-construction">Step 5: Use builder for programmatic construction</a></h3>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::ir::{SourcePackageBuilder, SourceItem, SourceFunction, ...};
+</span>use parc::ir::{SourcePackageBuilder, SourceItem, SourceFunction, ...};
 
 let pkg = SourcePackageBuilder::new()
     .source_path("api.h")
@@ -2696,13 +2695,13 @@ let pkg = SourcePackageBuilder::new()
 <h2 id="api-reference"><a class="header" href="#api-reference">API reference</a></h2>
 <p>Key public APIs for downstream consumers:</p>
 <ul>
-<li><code>pac::extract::extract_from_source(src)</code> — parse and extract</li>
-<li><code>pac::extract::extract_from_translation_unit(unit, path)</code> — extract from AST</li>
-<li><code>pac::extract::parse_and_extract(src, flavor)</code> — with flavor control</li>
-<li><code>pac::extract::parse_and_extract_resilient(src, flavor)</code> — with error recovery</li>
-<li><code>pac::scan::scan_headers(config)</code> — end-to-end header scanning</li>
-<li><code>pac::ir::SourcePackage</code> — the contract type</li>
-<li><code>pac::ir::SourcePackageBuilder</code> — programmatic construction</li>
+<li><code>parc::extract::extract_from_source(src)</code> — parse and extract</li>
+<li><code>parc::extract::extract_from_translation_unit(unit, path)</code> — extract from AST</li>
+<li><code>parc::extract::parse_and_extract(src, flavor)</code> — with flavor control</li>
+<li><code>parc::extract::parse_and_extract_resilient(src, flavor)</code> — with error recovery</li>
+<li><code>parc::scan::scan_headers(config)</code> — end-to-end header scanning</li>
+<li><code>parc::ir::SourcePackage</code> — the contract type</li>
+<li><code>parc::ir::SourcePackageBuilder</code> — programmatic construction</li>
 <li><code>SourcePackage::retain_items(pred)</code> — filter items</li>
 <li><code>SourcePackage::merge(other)</code> — combine packages</li>
 </ul>

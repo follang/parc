@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Parser API - PAC Reference</title>
+        <title>Parser API - PARC Reference</title>
 
 
         <!-- Custom HTML head -->
@@ -35,10 +35,10 @@
             const path_to_root = "";
             const default_light_theme = "navy";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-c5b10b10.js";
+            window.path_to_searchindex_js = "searchindex-107bc103.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-5d57fb77.js"></script>
+        <script src="toc-faeb9e03.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -137,7 +137,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">PAC Reference</h1>
+                    <h1 class="menu-title">PARC Reference</h1>
 
                     <div class="right-buttons">
                         <a href="print.html" title="Print this book" aria-label="Print this book">
@@ -204,19 +204,19 @@ parse::translation_unit(source, flavor)
 <h2 id="parse-an-expression"><a class="header" href="#parse-an-expression">Parse an expression</a></h2>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::Flavor;
-use pac::parse;
+</span>use parc::driver::Flavor;
+use parc::parse;
 
 let expr = parse::expression("value + 1 * scale", Flavor::StdC11)?;
 println!("{:#?}", expr);
-<span class="boring">Ok::&lt;(), pac::parse::ParseError&gt;(())
+<span class="boring">Ok::&lt;(), parc::parse::ParseError&gt;(())
 </span><span class="boring">}</span></code></pre>
 <p>The return type is <code>Box&lt;Node&lt;Expression&gt;&gt;</code>, so you get both the expression and its span.</p>
 <h2 id="parse-a-declaration"><a class="header" href="#parse-a-declaration">Parse a declaration</a></h2>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::Flavor;
-use pac::parse;
+</span>use parc::driver::Flavor;
+use parc::parse;
 
 let decl = parse::declaration(
     "static const unsigned long mask = 0xff;",
@@ -224,7 +224,7 @@ let decl = parse::declaration(
 )?;
 
 println!("{:#?}", decl.node);
-<span class="boring">Ok::&lt;(), pac::parse::ParseError&gt;(())
+<span class="boring">Ok::&lt;(), parc::parse::ParseError&gt;(())
 </span><span class="boring">}</span></code></pre>
 <p>Declarations are useful when you want to inspect:</p>
 <ul>
@@ -236,8 +236,8 @@ println!("{:#?}", decl.node);
 <h2 id="parse-a-statement"><a class="header" href="#parse-a-statement">Parse a statement</a></h2>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::Flavor;
-use pac::parse;
+</span>use parc::driver::Flavor;
+use parc::parse;
 
 let stmt = parse::statement(
     "for (int i = 0; i &lt; 4; i++) total += i;",
@@ -245,13 +245,13 @@ let stmt = parse::statement(
 )?;
 
 println!("{:#?}", stmt.node);
-<span class="boring">Ok::&lt;(), pac::parse::ParseError&gt;(())
+<span class="boring">Ok::&lt;(), parc::parse::ParseError&gt;(())
 </span><span class="boring">}</span></code></pre>
 <h2 id="parse-a-whole-translation-unit"><a class="header" href="#parse-a-whole-translation-unit">Parse a whole translation unit</a></h2>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::Flavor;
-use pac::parse;
+</span>use parc::driver::Flavor;
+use parc::parse;
 
 let source = r#"
 typedef int count_t;
@@ -260,14 +260,14 @@ count_t inc(count_t x) { return x + 1; }
 
 let unit = parse::translation_unit(source, Flavor::StdC11)?;
 println!("items: {}", unit.0.len());
-<span class="boring">Ok::&lt;(), pac::parse::ParseError&gt;(())
+<span class="boring">Ok::&lt;(), parc::parse::ParseError&gt;(())
 </span><span class="boring">}</span></code></pre>
 <h2 id="flavor-sensitive-parsing"><a class="header" href="#flavor-sensitive-parsing">Flavor-sensitive parsing</a></h2>
 <p>GNU or Clang syntax only parses when you select a compatible flavor.</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::Flavor;
-use pac::parse;
+</span>use parc::driver::Flavor;
+use parc::parse;
 
 let gnu_expr = "({ int x = 1; x + 2; })";
 assert!(parse::expression(gnu_expr, Flavor::GnuC11).is_ok());

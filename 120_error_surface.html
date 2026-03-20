@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Error Surface - PAC Reference</title>
+        <title>Error Surface - PARC Reference</title>
 
 
         <!-- Custom HTML head -->
@@ -35,10 +35,10 @@
             const path_to_root = "";
             const default_light_theme = "navy";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-c5b10b10.js";
+            window.path_to_searchindex_js = "searchindex-107bc103.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-5d57fb77.js"></script>
+        <script src="toc-faeb9e03.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -137,7 +137,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">PAC Reference</h1>
+                    <h1 class="menu-title">PARC Reference</h1>
 
                     <div class="right-buttons">
                         <a href="print.html" title="Print this book" aria-label="Print this book">
@@ -187,7 +187,7 @@
 <p>The <code>parse</code> module returns:</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>Result&lt;T, pac::parse::ParseError&gt;
+</span>Result&lt;T, parc::parse::ParseError&gt;
 <span class="boring">}</span></code></pre>
 <p><code>ParseError</code> includes:</p>
 <ul>
@@ -206,7 +206,7 @@
 <p>The <code>driver</code> module returns:</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>Result&lt;pac::driver::Parse, pac::driver::Error&gt;
+</span>Result&lt;parc::driver::Parse, parc::driver::Error&gt;
 <span class="boring">}</span></code></pre>
 <p>That error enum has two branches:</p>
 <ul>
@@ -247,8 +247,8 @@
 <h3 id="fragment-parsing"><a class="header" href="#fragment-parsing">Fragment parsing</a></h3>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::Flavor;
-use pac::parse;
+</span>use parc::driver::Flavor;
+use parc::parse;
 
 match parse::statement("if (x) {", Flavor::StdC11) {
     Ok(_) =&gt; {}
@@ -260,7 +260,7 @@ match parse::statement("if (x) {", Flavor::StdC11) {
 <h3 id="file-parsing"><a class="header" href="#file-parsing">File parsing</a></h3>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::{parse, Config, Error};
+</span>use parc::driver::{parse, Config, Error};
 
 match parse(&amp;Config::default(), "broken.c") {
     Ok(_) =&gt; {}
@@ -280,8 +280,8 @@ skips to the next synchronization point (<code>;</code> at file scope or <code>}
 parsing.</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::Flavor;
-use pac::parse;
+</span>use parc::driver::Flavor;
+use parc::parse;
 
 let tu = parse::translation_unit_resilient(source, Flavor::GnuC11);
 // tu.0 contains all successfully parsed declarations

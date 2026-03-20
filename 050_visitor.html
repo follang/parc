@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Visitor Pattern - PAC Reference</title>
+        <title>Visitor Pattern - PARC Reference</title>
 
 
         <!-- Custom HTML head -->
@@ -35,10 +35,10 @@
             const path_to_root = "";
             const default_light_theme = "navy";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-c5b10b10.js";
+            window.path_to_searchindex_js = "searchindex-107bc103.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-5d57fb77.js"></script>
+        <script src="toc-faeb9e03.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -137,7 +137,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">PAC Reference</h1>
+                    <h1 class="menu-title">PARC Reference</h1>
 
                     <div class="right-buttons">
                         <a href="print.html" title="Print this book" aria-label="Print this book">
@@ -181,13 +181,13 @@
 <li>free functions like <code>visit_expression</code> and <code>visit_function_definition</code> that recurse into children</li>
 </ul>
 <h2 id="the-important-rule"><a class="header" href="#the-important-rule">The important rule</a></h2>
-<p>When you override a method, call the free function from <code>pac::visit</code>, not the trait method on
+<p>When you override a method, call the free function from <code>parc::visit</code>, not the trait method on
 <code>self</code>. Calling <code>self.visit_*</code> from inside the override will recurse back into your override.</p>
 <h2 id="count-function-definitions"><a class="header" href="#count-function-definitions">Count function definitions</a></h2>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::{ast, span, visit};
-use pac::visit::Visit;
+</span>use parc::{ast, span, visit};
+use parc::visit::Visit;
 
 struct FunctionCounter {
     count: usize,
@@ -207,8 +207,8 @@ impl&lt;'ast&gt; Visit&lt;'ast&gt; for FunctionCounter {
 <h2 id="collect-identifiers-from-expressions"><a class="header" href="#collect-identifiers-from-expressions">Collect identifiers from expressions</a></h2>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::{ast, span, visit};
-use pac::visit::Visit;
+</span>use parc::{ast, span, visit};
+use parc::visit::Visit;
 
 struct IdentifierCollector {
     names: Vec&lt;String&gt;,
@@ -224,8 +224,8 @@ impl&lt;'ast&gt; Visit&lt;'ast&gt; for IdentifierCollector {
 <h2 id="use-the-visitor"><a class="header" href="#use-the-visitor">Use the visitor</a></h2>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::{parse, Config};
-use pac::visit::Visit;
+</span>use parc::driver::{parse, Config};
+use parc::visit::Visit;
 
 let parsed = parse(&amp;Config::default(), "examples/sample.c")?;
 
@@ -233,7 +233,7 @@ let mut counter = FunctionCounter { count: 0 };
 counter.visit_translation_unit(&amp;parsed.unit);
 
 println!("functions: {}", counter.count);
-<span class="boring">Ok::&lt;(), pac::driver::Error&gt;(())
+<span class="boring">Ok::&lt;(), parc::driver::Error&gt;(())
 </span><span class="boring">}</span></code></pre>
 <h2 id="when-to-override-which-method"><a class="header" href="#when-to-override-which-method">When to override which method</a></h2>
 <ul>

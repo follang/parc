@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>End-To-End Workflows - PAC Reference</title>
+        <title>End-To-End Workflows - PARC Reference</title>
 
 
         <!-- Custom HTML head -->
@@ -35,10 +35,10 @@
             const path_to_root = "";
             const default_light_theme = "navy";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-c5b10b10.js";
+            window.path_to_searchindex_js = "searchindex-107bc103.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-5d57fb77.js"></script>
+        <script src="toc-faeb9e03.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -137,7 +137,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">PAC Reference</h1>
+                    <h1 class="menu-title">PARC Reference</h1>
 
                     <div class="right-buttons">
                         <a href="print.html" title="Print this book" aria-label="Print this book">
@@ -179,11 +179,11 @@
 <h2 id="workflow-1-parse-a-real-c-file"><a class="header" href="#workflow-1-parse-a-real-c-file">Workflow 1: Parse A Real C File</a></h2>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::{parse, Config};
+</span>use parc::driver::{parse, Config};
 
 let parsed = parse(&amp;Config::default(), "include/demo.h")?;
 println!("items: {}", parsed.unit.0.len());
-<span class="boring">Ok::&lt;(), pac::driver::Error&gt;(())
+<span class="boring">Ok::&lt;(), parc::driver::Error&gt;(())
 </span><span class="boring">}</span></code></pre>
 <p>This is the baseline path when:</p>
 <ul>
@@ -195,11 +195,11 @@ println!("items: {}", parsed.unit.0.len());
 <h2 id="workflow-2-parse-a-preprocessed-snapshot"><a class="header" href="#workflow-2-parse-a-preprocessed-snapshot">Workflow 2: Parse A Preprocessed Snapshot</a></h2>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::{parse_preprocessed, Config};
+</span>use parc::driver::{parse_preprocessed, Config};
 
 let source = std::fs::read_to_string("snapshots/demo.i").unwrap();
 let parsed = parse_preprocessed(&amp;Config::default(), source)?;
-<span class="boring">Ok::&lt;(), pac::driver::SyntaxError&gt;(())
+<span class="boring">Ok::&lt;(), parc::driver::SyntaxError&gt;(())
 </span><span class="boring">}</span></code></pre>
 <p>Use this when:</p>
 <ul>
@@ -211,12 +211,12 @@ let parsed = parse_preprocessed(&amp;Config::default(), source)?;
 <h2 id="workflow-3-parse-a-fragment-in-tests"><a class="header" href="#workflow-3-parse-a-fragment-in-tests">Workflow 3: Parse A Fragment In Tests</a></h2>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::Flavor;
-use pac::parse;
+</span>use parc::driver::Flavor;
+use parc::parse;
 
 let decl = parse::declaration("typedef unsigned long word_t;", Flavor::StdC11)?;
 let expr = parse::expression("ptr-&gt;field + 1", Flavor::GnuC11)?;
-<span class="boring">Ok::&lt;(), pac::parse::ParseError&gt;(())
+<span class="boring">Ok::&lt;(), parc::parse::ParseError&gt;(())
 </span><span class="boring">}</span></code></pre>
 <p>This is the right workflow for:</p>
 <ul>
@@ -227,9 +227,9 @@ let expr = parse::expression("ptr-&gt;field + 1", Flavor::GnuC11)?;
 <h2 id="workflow-4-build-a-syntax-analyzer"><a class="header" href="#workflow-4-build-a-syntax-analyzer">Workflow 4: Build A Syntax Analyzer</a></h2>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::{parse, Config};
-use pac::visit::{self, Visit};
-use pac::{ast, span};
+</span>use parc::driver::{parse, Config};
+use parc::visit::{self, Visit};
+use parc::{ast, span};
 
 struct ReturnCounter {
     count: usize,
@@ -248,7 +248,7 @@ let parsed = parse(&amp;Config::default(), "src/main.c")?;
 let mut counter = ReturnCounter { count: 0 };
 counter.visit_translation_unit(&amp;parsed.unit);
 println!("return statements: {}", counter.count);
-<span class="boring">Ok::&lt;(), pac::driver::Error&gt;(())
+<span class="boring">Ok::&lt;(), parc::driver::Error&gt;(())
 </span><span class="boring">}</span></code></pre>
 <p>This is the normal PAC analyzer pattern:</p>
 <ol>
@@ -260,8 +260,8 @@ println!("return statements: {}", counter.count);
 <h2 id="workflow-5-build-diagnostics-with-real-file-locations"><a class="header" href="#workflow-5-build-diagnostics-with-real-file-locations">Workflow 5: Build Diagnostics With Real File Locations</a></h2>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::{parse, Config};
-use pac::loc::get_location_for_offset;
+</span>use parc::driver::{parse, Config};
+use parc::loc::get_location_for_offset;
 
 let parsed = parse(&amp;Config::default(), "src/main.c")?;
 
@@ -269,24 +269,24 @@ for item in &amp;parsed.unit.0 {
     let (loc, _) = get_location_for_offset(&amp;parsed.source, item.span.start);
     println!("top-level item starts at {}:{}", loc.file, loc.line);
 }
-<span class="boring">Ok::&lt;(), pac::driver::Error&gt;(())
+<span class="boring">Ok::&lt;(), parc::driver::Error&gt;(())
 </span><span class="boring">}</span></code></pre>
 <p>Use this when your users care about original file locations rather than raw byte offsets in the
 preprocessed stream.</p>
 <h2 id="workflow-6-debug-a-new-syntax-form"><a class="header" href="#workflow-6-debug-a-new-syntax-form">Workflow 6: Debug A New Syntax Form</a></h2>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::Flavor;
-use pac::parse;
-use pac::print::Printer;
-use pac::visit::Visit;
+</span>use parc::driver::Flavor;
+use parc::parse;
+use parc::print::Printer;
+use parc::visit::Visit;
 
 let expr = parse::expression("({ int x = 1; x + 1; })", Flavor::GnuC11)?;
 
 let mut out = String::new();
 Printer::new(&amp;mut out).visit_expression(&amp;expr.node, &amp;expr.span);
 println!("{}", out);
-<span class="boring">Ok::&lt;(), pac::parse::ParseError&gt;(())
+<span class="boring">Ok::&lt;(), parc::parse::ParseError&gt;(())
 </span><span class="boring">}</span></code></pre>
 <p>This is the most effective loop when exploring unfamiliar AST shapes.</p>
 <h2 id="workflow-7-regression-test-a-parse-failure"><a class="header" href="#workflow-7-regression-test-a-parse-failure">Workflow 7: Regression-Test A Parse Failure</a></h2>

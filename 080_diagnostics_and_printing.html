@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Diagnostics And Printing - PAC Reference</title>
+        <title>Diagnostics And Printing - PARC Reference</title>
 
 
         <!-- Custom HTML head -->
@@ -35,10 +35,10 @@
             const path_to_root = "";
             const default_light_theme = "navy";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-c5b10b10.js";
+            window.path_to_searchindex_js = "searchindex-107bc103.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-5d57fb77.js"></script>
+        <script src="toc-faeb9e03.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -137,7 +137,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">PAC Reference</h1>
+                    <h1 class="menu-title">PARC Reference</h1>
 
                     <div class="right-buttons">
                         <a href="print.html" title="Print this book" aria-label="Print this book">
@@ -184,8 +184,8 @@
 <p>The <code>parse</code> module returns <code>ParseError</code>:</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::Flavor;
-use pac::parse;
+</span>use parc::driver::Flavor;
+use parc::parse;
 
 match parse::expression("a +", Flavor::StdC11) {
     Ok(_) =&gt; {}
@@ -207,7 +207,7 @@ match parse::expression("a +", Flavor::StdC11) {
 <p>The driver adds preprocessor context on top:</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::{parse, Config, Error};
+</span>use parc::driver::{parse, Config, Error};
 
 match parse(&amp;Config::default(), "broken.c") {
     Ok(_) =&gt; {}
@@ -231,16 +231,16 @@ human-readable error message.</p>
 <p><code>print::Printer</code> is a visitor that renders the tree as an indented text dump.</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::{parse, Config};
-use pac::print::Printer;
-use pac::visit::Visit;
+</span>use parc::driver::{parse, Config};
+use parc::print::Printer;
+use parc::visit::Visit;
 
 let parsed = parse(&amp;Config::default(), "examples/sample.c")?;
 
 let mut out = String::new();
 Printer::new(&amp;mut out).visit_translation_unit(&amp;parsed.unit);
 println!("{}", out);
-<span class="boring">Ok::&lt;(), pac::driver::Error&gt;(())
+<span class="boring">Ok::&lt;(), parc::driver::Error&gt;(())
 </span><span class="boring">}</span></code></pre>
 <p>The printer is ideal when:</p>
 <ul>

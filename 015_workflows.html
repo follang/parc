@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Common Workflows - PAC Reference</title>
+        <title>Common Workflows - PARC Reference</title>
 
 
         <!-- Custom HTML head -->
@@ -35,10 +35,10 @@
             const path_to_root = "";
             const default_light_theme = "navy";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-c5b10b10.js";
+            window.path_to_searchindex_js = "searchindex-107bc103.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-5d57fb77.js"></script>
+        <script src="toc-faeb9e03.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -137,7 +137,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">PAC Reference</h1>
+                    <h1 class="menu-title">PARC Reference</h1>
 
                     <div class="right-buttons">
                         <a href="print.html" title="Print this book" aria-label="Print this book">
@@ -196,7 +196,7 @@ the right API.</p>
 <p>Use this when your source depends on <code>#include</code>, <code>#define</code>, or compiler predefined macros.</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::{parse, Config};
+</span>use parc::driver::{parse, Config};
 
 let config = Config::default();
 let parsed = parse(&amp;config, "src/main.c")?;
@@ -210,7 +210,7 @@ let parsed = parse(&amp;config, "src/main.c")?;
 <p>Use this when another tool already ran preprocessing and you only want PAC to parse.</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::{parse_preprocessed, Config};
+</span>use parc::driver::{parse_preprocessed, Config};
 
 let config = Config::default();
 let source = r#"
@@ -229,11 +229,11 @@ let parsed = parse_preprocessed(&amp;config, source)?;
 <li>reproducing parse bugs from stored <code>.i</code> files</li>
 </ul>
 <h2 id="parse-a-fragment"><a class="header" href="#parse-a-fragment">Parse a fragment</a></h2>
-<p>Use <code>pac::parse</code> when you are not dealing with a whole file.</p>
+<p>Use <code>parc::parse</code> when you are not dealing with a whole file.</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::Flavor;
-use pac::parse;
+</span>use parc::driver::Flavor;
+use parc::parse;
 
 let expr = parse::expression("ptr-&gt;len + 1", Flavor::GnuC11)?;
 let decl = parse::declaration("unsigned long flags;", Flavor::StdC11)?;
@@ -255,9 +255,9 @@ let stmt = parse::statement("if (ok) return 1;", Flavor::StdC11)?;
 <p>Example outline:</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::{parse, Config};
-use pac::visit::{self, Visit};
-use pac::{ast, span};
+</span>use parc::driver::{parse, Config};
+use parc::visit::{self, Visit};
+use parc::{ast, span};
 
 struct FunctionCounter {
     count: usize,
@@ -278,22 +278,22 @@ let parsed = parse(&amp;Config::default(), "src/main.c")?;
 let mut counter = FunctionCounter { count: 0 };
 counter.visit_translation_unit(&amp;parsed.unit);
 println!("functions: {}", counter.count);
-<span class="boring">Ok::&lt;(), pac::driver::Error&gt;(())
+<span class="boring">Ok::&lt;(), parc::driver::Error&gt;(())
 </span><span class="boring">}</span></code></pre>
 <h2 id="debug-the-parse-tree"><a class="header" href="#debug-the-parse-tree">Debug the parse tree</a></h2>
 <p>Use the printer when you need a human-readable structural dump:</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use pac::driver::{parse, Config};
-use pac::print::Printer;
-use pac::visit::Visit;
+</span>use parc::driver::{parse, Config};
+use parc::print::Printer;
+use parc::visit::Visit;
 
 let parsed = parse(&amp;Config::default(), "src/main.c")?;
 
 let mut out = String::new();
 Printer::new(&amp;mut out).visit_translation_unit(&amp;parsed.unit);
 println!("{}", out);
-<span class="boring">Ok::&lt;(), pac::driver::Error&gt;(())
+<span class="boring">Ok::&lt;(), parc::driver::Error&gt;(())
 </span><span class="boring">}</span></code></pre>
 <h2 id="rule-of-thumb"><a class="header" href="#rule-of-thumb">Rule of thumb</a></h2>
 <ul>
