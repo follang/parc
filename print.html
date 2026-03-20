@@ -36,10 +36,10 @@
             const path_to_root = "";
             const default_light_theme = "navy";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-89753dc1.js";
+            window.path_to_searchindex_js = "searchindex-c5b10b10.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-e600abd2.js"></script>
+        <script src="toc-5d57fb77.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -176,30 +176,32 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="pac-reference"><a class="header" href="#pac-reference">PAC Reference</a></h1>
-<p>PAC is a Rust library for parsing C source into an abstract syntax tree.
-It targets C11 and can optionally accept GNU and Clang extensions.</p>
-<p>At a high level, PAC supports two workflows:</p>
-<ol>
-<li>Parse a real C file through a system preprocessor with [<code>pac::driver</code>].</li>
-<li>Parse already-preprocessed text or individual C fragments with [<code>pac::parse</code>].</li>
-</ol>
+<p>PAC is a Rust library for C language frontend processing: preprocessing,
+parsing, and source-level semantic extraction. It targets C11 and can
+optionally accept GNU and Clang extensions.</p>
+<p>PAC is the frontend stage of the PARC pipeline. It produces a durable
+<code>SourcePackage</code> contract suitable for downstream consumption by linker
+and codegen stages.</p>
 <h2 id="what-pac-gives-you"><a class="header" href="#what-pac-gives-you">What PAC gives you</a></h2>
 <ul>
-<li>A typed AST under <code>pac::ast</code></li>
-<li>Source spans for parsed nodes under <code>pac::span</code></li>
-<li>File and line reconstruction for preprocessed input under <code>pac::loc</code></li>
-<li>A recursive visitor API under <code>pac::visit</code></li>
-<li>A tree-style debug printer under <code>pac::print</code></li>
+<li><strong>Preprocessing</strong>: built-in C preprocessor with macro expansion, conditionals, and includes</li>
+<li><strong>Parsing</strong>: C11 parser producing a typed AST under <code>pac::ast</code></li>
+<li><strong>Extraction</strong>: source-level declaration normalization into <code>pac::ir</code></li>
+<li><strong>Source IR</strong>: a serializable <code>SourcePackage</code> with functions, records, enums, typedefs, variables, macros, diagnostics, and provenance</li>
+<li><strong>Scanning</strong>: end-to-end header scanning via <code>pac::scan</code></li>
+<li>Source spans under <code>pac::span</code></li>
+<li>File/line reconstruction under <code>pac::loc</code></li>
+<li>Recursive visitor API under <code>pac::visit</code></li>
+<li>Tree-style debug printer under <code>pac::print</code></li>
 </ul>
 <h2 id="pipeline"><a class="header" href="#pipeline">Pipeline</a></h2>
-<p>For file parsing, the normal flow is:</p>
-<pre><code class="language-text">C source file
-  -&gt; system preprocessor (gcc / clang)
+<pre><code class="language-text">C source / headers
+  -&gt; preprocessor (built-in or gcc/clang)
   -&gt; PAC parser
-  -&gt; TranslationUnit AST
+  -&gt; extraction
+  -&gt; SourcePackage (frontend contract)
+  -&gt; downstream (LINC, GERC)
 </code></pre>
-<p>If you already have preprocessed source, you can skip the external preprocessor and call
-<code>driver::parse_preprocessed</code> or the lower-level functions in <code>parse</code>.</p>
 <h2 id="public-modules"><a class="header" href="#public-modules">Public modules</a></h2>
 <div class="table-wrapper">
 <table>
@@ -207,9 +209,14 @@ It targets C11 and can optionally accept GNU and Clang extensions.</p>
 <tr><th>Module</th><th>Purpose</th></tr>
 </thead>
 <tbody>
+<tr><td><code>ir</code></td><td>Source-level IR: <code>SourcePackage</code>, <code>SourceType</code>, <code>SourceItem</code>, etc.</td></tr>
+<tr><td><code>extract</code></td><td>Declaration extraction from AST to IR</td></tr>
+<tr><td><code>scan</code></td><td>Header scanning (preprocess + parse + extract)</td></tr>
+<tr><td><code>intake</code></td><td>Preprocessed source intake</td></tr>
 <tr><td><code>driver</code></td><td>High-level API for parsing files via a C preprocessor</td></tr>
-<tr><td><code>parse</code></td><td>Direct parsing of expressions, declarations, statements, and translation units</td></tr>
-<tr><td><code>ast</code></td><td>AST definitions for declarations, expressions, statements, and extensions</td></tr>
+<tr><td><code>preprocess</code></td><td>Built-in C preprocessor</td></tr>
+<tr><td><code>parse</code></td><td>Direct parsing of expressions, declarations, statements, translation units</td></tr>
+<tr><td><code>ast</code></td><td>AST definitions for declarations, expressions, statements, extensions</td></tr>
 <tr><td><code>visit</code></td><td>Recursive traversal API for AST consumers</td></tr>
 <tr><td><code>span</code></td><td>Byte offsets for parsed nodes</td></tr>
 <tr><td><code>loc</code></td><td>Mapping byte offsets back to source files and lines</td></tr>
@@ -219,47 +226,20 @@ It targets C11 and can optionally accept GNU and Clang extensions.</p>
 </div>
 <h2 id="typical-use-cases"><a class="header" href="#typical-use-cases">Typical use cases</a></h2>
 <ul>
+<li>Extract function/struct/enum declarations from C headers</li>
 <li>Build a linter or analysis tool for C code</li>
-<li>Inspect declarations in headers after preprocessing</li>
+<li>Scan headers and produce a serializable source package</li>
 <li>Parse small fragments in tests</li>
 <li>Prototype refactoring or code-search tools</li>
-<li>Compare parser output across standard, GNU, and Clang flavors</li>
-</ul>
-<h2 id="important-mental-model"><a class="header" href="#important-mental-model">Important mental model</a></h2>
-<p>PAC is a parser, not a full compiler frontend. It gives you syntax and source structure.
-It does not do semantic analysis, type checking, macro expansion itself, or code generation.</p>
-<p>That distinction matters:</p>
-<ul>
-<li>If your input still contains active preprocessor directives or macros, use <code>driver</code>.</li>
-<li>If you want symbol resolution or type inference, you need to build that on top of the AST.</li>
-<li>Node spans point into the parsed input text, which for <code>driver</code> means the preprocessed source.</li>
 </ul>
 <h2 id="where-to-start"><a class="header" href="#where-to-start">Where to start</a></h2>
 <ul>
-<li>Read <a href="#getting-started">Getting Started</a> for the basic setup</li>
-<li>Read <a href="#common-workflows">Common Workflows</a> to choose the right entry point</li>
-<li>Read <a href="#driver-api">Driver API</a> or <a href="#parser-api">Parser API</a> depending on your input</li>
+<li>Read <a href="#getting-started">Getting Started</a> for basic setup</li>
+<li>Read <a href="#source-ir">Source IR</a> for the data contract</li>
+<li>Read <a href="#extraction">Extraction</a> for turning source into IR</li>
+<li>Read <a href="#header-scanning">Header Scanning</a> for end-to-end workflows</li>
+<li>Read <a href="#driver-api">Driver API</a> or <a href="#parser-api">Parser API</a> for parse-level access</li>
 <li>Read <a href="#ast-model">AST Model</a> before writing analysis code</li>
-<li>Read <a href="#visitor-pattern">Visitor Pattern</a> if you want to walk the tree</li>
-</ul>
-<h2 id="recommended-reading-order"><a class="header" href="#recommended-reading-order">Recommended reading order</a></h2>
-<p>The book is now organized in a few larger blocks:</p>
-<ol>
-<li>Core parsing usage</li>
-<li>Diagnostics, locations, and testing</li>
-<li>Consumer contract and workflow guidance</li>
-<li>Support boundaries and unsupported cases</li>
-<li>Contributor-oriented project layout and workflow</li>
-</ol>
-<p>If you are integrating PAC into another tool, focus first on:</p>
-<ul>
-<li><a href="#common-workflows">Common Workflows</a></li>
-<li><a href="#driver-api">Driver API</a></li>
-<li><a href="#parser-api">Parser API</a></li>
-<li><a href="#ast-model">AST Model</a></li>
-<li><a href="#visitor-pattern">Visitor Pattern</a></li>
-<li><a href="#api-contract">API Contract</a></li>
-<li><a href="#end-to-end-workflows">End-To-End Workflows</a></li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="getting-started"><a class="header" href="#getting-started">Getting Started</a></h1>
@@ -602,12 +582,390 @@ match parse_preprocessed(&amp;Config::default(), broken) {
 <span class="boring">}</span></code></pre>
 <p>If the preprocessed source contains line markers, <code>SyntaxError::get_location()</code> can reconstruct the
 original file and include stack.</p>
+<h2 id="built-in-preprocessor"><a class="header" href="#built-in-preprocessor">Built-in preprocessor</a></h2>
+<p>PAC includes a built-in C preprocessor that eliminates the need for an external
+<code>gcc</code> or <code>clang</code> binary. Use <code>parse_builtin</code> instead of <code>parse</code>:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::driver::{parse_builtin, Config};
+use std::path::Path;
+
+let config = Config::with_gcc();
+let include_paths = vec![Path::new("/usr/include")];
+let parsed = parse_builtin(&amp;config, "src/input.c", &amp;include_paths)?;
+<span class="boring">Ok::&lt;(), pac::driver::Error&gt;(())
+</span><span class="boring">}</span></code></pre>
+<p>The built-in preprocessor supports:</p>
+<ul>
+<li>Object-like and function-like macros (with <code>#</code>, <code>##</code>, <code>__VA_ARGS__</code>)</li>
+<li>Conditional compilation (<code>#if</code>, <code>#ifdef</code>, <code>#ifndef</code>, <code>#elif</code>, <code>#else</code>, <code>#endif</code>)</li>
+<li><code>#include</code> resolution with configurable search paths</li>
+<li>Include guard detection and optimization</li>
+<li><code>defined()</code> operator in <code>#if</code> expressions</li>
+<li>Full C constant expression evaluation (arithmetic, bitwise, logical, ternary)</li>
+<li>Predefined target macros (architecture, OS, GCC compatibility)</li>
+</ul>
+<h2 id="macro-extraction"><a class="header" href="#macro-extraction">Macro extraction</a></h2>
+<p>To extract all <code>#define</code> macros from a C file (equivalent to <code>gcc -dD -E</code>):</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::driver::capture_macros;
+use std::path::Path;
+
+let macros = capture_macros("src/input.c", &amp;[Path::new("/usr/include")])?;
+for (name, value) in &amp;macros {
+    println!("#define {} {}", name, value);
+}
+<span class="boring">Ok::&lt;(), pac::driver::Error&gt;(())
+</span><span class="boring">}</span></code></pre>
+<p>This returns all macros active after preprocessing, including predefined target
+macros and macros from included headers.</p>
 <h2 id="practical-advice"><a class="header" href="#practical-advice">Practical advice</a></h2>
 <ul>
 <li>Keep <code>parsed.source</code> if you plan to report errors later.</li>
 <li>Use <code>parse_preprocessed</code> for deterministic regression tests.</li>
 <li>Prefer explicit <code>cpp_options</code> in tools and CI so parse behavior stays reproducible.</li>
+<li>Use <code>parse_builtin</code> when you need zero-dependency parsing without a C toolchain.</li>
 </ul>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="built-in-preprocessor-1"><a class="header" href="#built-in-preprocessor-1">Built-in Preprocessor</a></h1>
+<p>PAC includes a complete built-in C preprocessor in the <code>pac::preprocess</code> module.
+This eliminates the runtime dependency on <code>gcc</code> or <code>clang</code> for preprocessing.</p>
+<h2 id="architecture"><a class="header" href="#architecture">Architecture</a></h2>
+<p>The preprocessor is split into focused modules:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Module</th><th>Purpose</th></tr>
+</thead>
+<tbody>
+<tr><td><code>token</code></td><td>Token types (<code>Ident</code>, <code>Number</code>, <code>Punct</code>, etc.)</td></tr>
+<tr><td><code>lexer</code></td><td>Preprocessor tokenizer (§6.4 preprocessing tokens)</td></tr>
+<tr><td><code>directive</code></td><td>Directive parser (<code>#define</code>, <code>#if</code>, <code>#include</code>, etc.)</td></tr>
+<tr><td><code>macros</code></td><td>Macro table, object-like and function-like expansion</td></tr>
+<tr><td><code>expr</code></td><td><code>#if</code> constant expression evaluator</td></tr>
+<tr><td><code>processor</code></td><td>Conditional compilation engine</td></tr>
+<tr><td><code>include</code></td><td><code>#include</code> resolution with search paths and guard tracking</td></tr>
+<tr><td><code>predefined</code></td><td>Target-specific predefined macros</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="quick-start"><a class="header" href="#quick-start">Quick start</a></h2>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::preprocess::preprocess;
+
+let output = preprocess("#define X 42\nint a = X;\n");
+// output.tokens contains the expanded token stream
+<span class="boring">}</span></code></pre>
+<h2 id="macro-expansion"><a class="header" href="#macro-expansion">Macro expansion</a></h2>
+<p>Both object-like and function-like macros are supported:</p>
+<pre><code class="language-c">#define SIZE 1024
+#define MAX(a, b) ((a) &gt; (b) ? (a) : (b))
+#define LOG(fmt, ...) printf(fmt, __VA_ARGS__)
+</code></pre>
+<p>Features:</p>
+<ul>
+<li><code>#</code> stringification operator</li>
+<li><code>##</code> token pasting operator</li>
+<li><code>__VA_ARGS__</code> for variadic macros</li>
+<li>Recursive expansion with “paint set” to prevent infinite recursion (C standard §6.10.3.4)</li>
+<li>Self-referential macros handled correctly (<code>#define X X + 1</code> expands to <code>X + 1</code>)</li>
+</ul>
+<h2 id="conditional-compilation"><a class="header" href="#conditional-compilation">Conditional compilation</a></h2>
+<p>All standard conditional directives are supported:</p>
+<pre><code class="language-c">#if CONDITION
+#ifdef NAME
+#ifndef NAME
+#elif CONDITION
+#else
+#endif
+</code></pre>
+<p>The <code>#if</code> expression evaluator supports:</p>
+<ul>
+<li>Integer literals (decimal, octal, hex, binary)</li>
+<li>Character constants (<code>'x'</code>)</li>
+<li><code>defined(NAME)</code> and <code>defined NAME</code></li>
+<li>All C operators: arithmetic, bitwise, logical, comparison, ternary</li>
+<li>Undefined identifiers evaluate to <code>0</code> (per C standard §6.10.1p4)</li>
+</ul>
+<h2 id="include-resolution"><a class="header" href="#include-resolution">Include resolution</a></h2>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::preprocess::{IncludeResolver, Processor};
+
+let mut resolver = IncludeResolver::new();
+resolver.add_system_path("/usr/include");
+resolver.add_local_path("./include");
+
+let mut processor = Processor::new();
+let result = resolver.preprocess_file(
+    std::path::Path::new("src/main.c"),
+    &amp;mut processor,
+);
+<span class="boring">}</span></code></pre>
+<p>Features:</p>
+<ul>
+<li><code>"local"</code> includes search relative to the including file, then local paths</li>
+<li><code>&lt;system&gt;</code> includes search system paths only</li>
+<li>Include guard detection (<code>#ifndef X / #define X / ... / #endif</code>)</li>
+<li>File content caching</li>
+<li>Maximum include depth (200) to prevent infinite recursion</li>
+</ul>
+<h2 id="predefined-macros"><a class="header" href="#predefined-macros">Predefined macros</a></h2>
+<p>Target-specific macros are available for common platforms:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::preprocess::{MacroTable, Target, define_target_macros};
+
+let mut table = MacroTable::new();
+define_target_macros(&amp;mut table, &amp;Target::host());
+// Now table has __STDC__, __linux__, __x86_64__, __GNUC__, etc.
+<span class="boring">}</span></code></pre>
+<p>Supported targets:</p>
+<ul>
+<li><strong>Architectures</strong>: x86_64, aarch64, x86, arm</li>
+<li><strong>Operating systems</strong>: Linux, macOS (Darwin), Windows</li>
+</ul>
+<p>Standard macros defined:</p>
+<ul>
+<li><code>__STDC__</code>, <code>__STDC_VERSION__</code>, <code>__STDC_HOSTED__</code></li>
+<li>Architecture-specific: <code>__x86_64__</code>, <code>__aarch64__</code>, <code>__i386__</code>, <code>__arm__</code></li>
+<li>OS-specific: <code>__linux__</code>, <code>__APPLE__</code>, <code>_WIN32</code>, etc.</li>
+<li>GCC compatibility: <code>__GNUC__</code>, <code>__GNUC_MINOR__</code>, <code>__GNUC_PATCHLEVEL__</code></li>
+<li>Type sizes: <code>__SIZEOF_POINTER__</code>, <code>__SIZEOF_INT__</code>, etc.</li>
+<li>Limits: <code>__CHAR_BIT__</code>, <code>__INT_MAX__</code>, <code>__LONG_MAX__</code></li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="source-ir"><a class="header" href="#source-ir">Source IR</a></h1>
+<p>The <code>pac::ir</code> module defines the durable intermediate representation produced
+by the PARC frontend. It is the primary contract between the parser/extractor
+and downstream consumers (LINC, GERC).</p>
+<h2 id="design-principles"><a class="header" href="#design-principles">Design Principles</a></h2>
+<ul>
+<li><strong>Smaller than the AST</strong>: only normalized declarations, not the full syntax tree</li>
+<li><strong>Serializable</strong>: all types derive <code>serde::Serialize</code> and <code>serde::Deserialize</code></li>
+<li><strong>Parser-agnostic</strong>: downstream consumers should depend on <code>pac::ir</code>, not <code>pac::ast</code></li>
+<li><strong>No link/binary concerns</strong>: no ABI probing, no library paths, no symbol validation</li>
+</ul>
+<h2 id="key-types"><a class="header" href="#key-types">Key Types</a></h2>
+<h3 id="sourcepackage"><a class="header" href="#sourcepackage"><code>SourcePackage</code></a></h3>
+<p>The top-level container:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::ir::SourcePackage;
+
+let pkg = SourcePackage::new();
+assert!(pkg.is_empty());
+<span class="boring">}</span></code></pre>
+<h3 id="sourcetype"><a class="header" href="#sourcetype"><code>SourceType</code></a></h3>
+<p>Represents C types at source level:</p>
+<pre><code class="language-text">Void, Bool, Char, SChar, UChar, Short, UShort,
+Int, UInt, Long, ULong, LongLong, ULongLong,
+Float, Double, LongDouble, Int128, UInt128,
+Pointer, Array, Qualified, FunctionPointer,
+TypedefRef, RecordRef, EnumRef, Opaque
+</code></pre>
+<h3 id="sourceitem"><a class="header" href="#sourceitem"><code>SourceItem</code></a></h3>
+<p>One extracted declaration:</p>
+<ul>
+<li><code>Function</code> — function declaration with name, parameters, return type, calling convention</li>
+<li><code>Record</code> — struct/union with optional fields</li>
+<li><code>Enum</code> — enum with named variants and optional values</li>
+<li><code>TypeAlias</code> — typedef declaration</li>
+<li><code>Variable</code> — extern variable declaration</li>
+<li><code>Unsupported</code> — placeholder for unrepresentable declarations</li>
+</ul>
+<h3 id="sourcemacro"><a class="header" href="#sourcemacro"><code>SourceMacro</code></a></h3>
+<p>Captured preprocessor macro with form (object-like/function-like), kind, and optional parsed value.</p>
+<h3 id="sourcediagnostic"><a class="header" href="#sourcediagnostic"><code>SourceDiagnostic</code></a></h3>
+<p>Frontend diagnostic with kind, severity, message, optional location, and optional item name.</p>
+<h3 id="provenance"><a class="header" href="#provenance">Provenance</a></h3>
+<ul>
+<li><code>SourceOrigin</code> — where a declaration came from (Entry, UserInclude, System, Unknown)</li>
+<li><code>DeclarationProvenance</code> — per-item provenance metadata</li>
+<li><code>MacroProvenance</code> — per-macro provenance metadata</li>
+<li><code>SourceTarget</code> — compiler/target identity</li>
+<li><code>SourceInputs</code> — entry headers, include dirs, defines</li>
+</ul>
+<h2 id="json-serialization"><a class="header" href="#json-serialization">JSON Serialization</a></h2>
+<p>All IR types support JSON roundtrip:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::ir::SourcePackage;
+
+let pkg = SourcePackage::new();
+let json = serde_json::to_string_pretty(&amp;pkg).unwrap();
+let back: SourcePackage = serde_json::from_str(&amp;json).unwrap();
+assert_eq!(pkg, back);
+<span class="boring">}</span></code></pre>
+<h2 id="querying"><a class="header" href="#querying">Querying</a></h2>
+<p><code>SourcePackage</code> provides typed accessors:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// pkg.functions()      -&gt; Iterator&lt;Item = &amp;SourceFunction&gt;
+// pkg.records()        -&gt; Iterator&lt;Item = &amp;SourceRecord&gt;
+// pkg.enums()          -&gt; Iterator&lt;Item = &amp;SourceEnum&gt;
+// pkg.type_aliases()   -&gt; Iterator&lt;Item = &amp;SourceTypeAlias&gt;
+// pkg.variables()      -&gt; Iterator&lt;Item = &amp;SourceVariable&gt;
+// pkg.unsupported_items() -&gt; ...
+// pkg.find_function("malloc")
+// pkg.find_record("point")
+// pkg.find_enum("color")
+// pkg.find_type_alias("size_t")
+// pkg.find_variable("errno")
+<span class="boring">}</span></code></pre>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="extraction"><a class="header" href="#extraction">Extraction</a></h1>
+<p>The <code>pac::extract</code> module converts a parsed C AST into the normalized
+<code>SourcePackage</code> IR. It handles all declaration families.</p>
+<h2 id="quick-start-1"><a class="header" href="#quick-start-1">Quick Start</a></h2>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::extract;
+
+let source = r#"
+    typedef unsigned long size_t;
+    void *malloc(size_t size);
+    struct point { int x; int y; };
+"#;
+
+let pkg = extract::extract_from_source(source).unwrap();
+assert_eq!(pkg.function_count(), 1);
+assert_eq!(pkg.record_count(), 1);
+assert_eq!(pkg.type_alias_count(), 1);
+<span class="boring">}</span></code></pre>
+<h2 id="api-functions"><a class="header" href="#api-functions">API Functions</a></h2>
+<h3 id="extract_from_source"><a class="header" href="#extract_from_source"><code>extract_from_source</code></a></h3>
+<p>Parse and extract in one step using GNU C11 flavor:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let pkg = pac::extract::extract_from_source("int foo(void);").unwrap();
+<span class="boring">}</span></code></pre>
+<h3 id="parse_and_extract"><a class="header" href="#parse_and_extract"><code>parse_and_extract</code></a></h3>
+<p>Parse and extract with a specific flavor:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let pkg = pac::extract::parse_and_extract(
+    "int foo(void);",
+    pac::driver::Flavor::StdC11,
+).unwrap();
+<span class="boring">}</span></code></pre>
+<h3 id="extract_from_translation_unit"><a class="header" href="#extract_from_translation_unit"><code>extract_from_translation_unit</code></a></h3>
+<p>Extract from an already-parsed AST:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let unit = pac::parse::translation_unit("int foo(void);", pac::driver::Flavor::StdC11).unwrap();
+let pkg = pac::extract::extract_from_translation_unit(&amp;unit, Some("test.h".into()));
+<span class="boring">}</span></code></pre>
+<h3 id="parse_and_extract_resilient"><a class="header" href="#parse_and_extract_resilient"><code>parse_and_extract_resilient</code></a></h3>
+<p>Parse with error recovery and extract what’s possible:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let pkg = pac::extract::parse_and_extract_resilient(
+    "int valid;\n@@@bad@@@;\nint also_valid;",
+    pac::driver::Flavor::StdC11,
+);
+<span class="boring">}</span></code></pre>
+<h3 id="extract_file"><a class="header" href="#extract_file"><code>extract_file</code></a></h3>
+<p>Read a file from disk and extract:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let pkg = pac::extract::extract_file("path/to/header.h", pac::driver::Flavor::GnuC11).unwrap();
+assert!(pkg.source_path.is_some());
+<span class="boring">}</span></code></pre>
+<h2 id="what-gets-extracted"><a class="header" href="#what-gets-extracted">What Gets Extracted</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>C Declaration</th><th>Source Item</th></tr>
+</thead>
+<tbody>
+<tr><td><code>typedef int T;</code></td><td><code>SourceTypeAlias</code></td></tr>
+<tr><td><code>int foo(void);</code></td><td><code>SourceFunction</code></td></tr>
+<tr><td><code>int foo(void) { ... }</code></td><td><code>SourceFunction</code> (body ignored)</td></tr>
+<tr><td><code>struct S { int x; };</code></td><td><code>SourceRecord</code></td></tr>
+<tr><td><code>struct S;</code></td><td><code>SourceRecord</code> (opaque)</td></tr>
+<tr><td><code>union U { ... };</code></td><td><code>SourceRecord</code> (Union kind)</td></tr>
+<tr><td><code>enum E { A, B };</code></td><td><code>SourceEnum</code></td></tr>
+<tr><td><code>extern int x;</code></td><td><code>SourceVariable</code></td></tr>
+<tr><td><code>static int f() {}</code></td><td>Diagnostic (not bindable)</td></tr>
+<tr><td><code>_Static_assert(...)</code></td><td>Diagnostic</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="diagnostics"><a class="header" href="#diagnostics">Diagnostics</a></h2>
+<p>The extractor produces diagnostics for constructs it cannot fully represent:</p>
+<ul>
+<li>Bitfield widths (partial representation)</li>
+<li>Inline/noreturn specifiers (ignored)</li>
+<li>Calling convention attributes (captured on function, other attributes warned)</li>
+<li>K&amp;R function declarations (unsupported)</li>
+<li>Block pointers (unsupported)</li>
+<li>Static functions (not bindable)</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="header-scanning"><a class="header" href="#header-scanning">Header Scanning</a></h1>
+<p>The <code>pac::scan</code> module provides end-to-end header scanning: preprocess
+C headers and extract a <code>SourcePackage</code> in one step.</p>
+<h2 id="quick-start-2"><a class="header" href="#quick-start-2">Quick Start</a></h2>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::scan::{ScanConfig, scan_headers};
+
+let config = ScanConfig::new()
+    .entry_header("api.h")
+    .include_dir("/usr/include")
+    .define_flag("NDEBUG")
+    .with_builtin_preprocessor();
+
+let result = scan_headers(&amp;config).unwrap();
+let pkg = result.package;
+<span class="boring">}</span></code></pre>
+<h2 id="scanconfig"><a class="header" href="#scanconfig">ScanConfig</a></h2>
+<p>Builder for scan configuration:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Method</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>entry_header(path)</code></td><td>Add an entry-point header</td></tr>
+<tr><td><code>include_dir(path)</code></td><td>Add a preprocessor include search path</td></tr>
+<tr><td><code>define(name, value)</code></td><td>Add a preprocessor define with value</td></tr>
+<tr><td><code>define_flag(name)</code></td><td>Add a flag-style define (no value)</td></tr>
+<tr><td><code>with_compiler(cmd)</code></td><td>Set the external preprocessor command</td></tr>
+<tr><td><code>with_flavor(flavor)</code></td><td>Set the parser flavor</td></tr>
+<tr><td><code>with_builtin_preprocessor()</code></td><td>Use the built-in preprocessor</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="preprocessing-modes"><a class="header" href="#preprocessing-modes">Preprocessing Modes</a></h2>
+<h3 id="external-default"><a class="header" href="#external-default">External (default)</a></h3>
+<p>Uses <code>gcc -E</code> or <code>clang -E</code> to preprocess headers. Requires the
+compiler to be installed. Supports all system headers.</p>
+<h3 id="built-in"><a class="header" href="#built-in">Built-in</a></h3>
+<p>Uses <code>pac::preprocess</code> for self-contained headers that don’t need
+system includes. No external compiler required.</p>
+<h2 id="scanresult"><a class="header" href="#scanresult">ScanResult</a></h2>
+<p>The scan produces:</p>
+<ul>
+<li><code>package: SourcePackage</code> — the extracted declarations and metadata</li>
+<li><code>preprocessed_source: String</code> — the preprocessed source text</li>
+</ul>
+<h2 id="intake"><a class="header" href="#intake">Intake</a></h2>
+<p>For already-preprocessed source (e.g., output of <code>gcc -E</code>), use
+<code>pac::intake::PreprocessedInput</code>:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::intake::PreprocessedInput;
+
+let input = PreprocessedInput::from_string("int foo(void);")
+    .with_path("output.i")
+    .with_flavor(pac::driver::Flavor::GnuC11);
+
+let pkg = input.extract();
+<span class="boring">}</span></code></pre>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="parser-api"><a class="header" href="#parser-api">Parser API</a></h1>
 <p>The <code>parse</code> module exposes direct parsing functions that work on in-memory strings. Unlike
@@ -1159,12 +1517,38 @@ FULL_APP_TAG=synthetic make test
 <h2 id="current-workspace-note"><a class="header" href="#current-workspace-note">Current workspace note</a></h2>
 <p>The test harness and README describe <code>test/full_apps</code>, but that directory is not present in this
 workspace snapshot. The book documents the supported format because the code and README do.</p>
+<h2 id="extraction-tests"><a class="header" href="#extraction-tests">Extraction tests</a></h2>
+<p><code>src/tests/extraction_fixtures.rs</code> contains fixture-based tests for the extraction pipeline:
+typical C patterns (stdio-style, nested structs, typedef chains, function pointers, etc.).</p>
+<p><code>src/extract/mod.rs</code> also contains unit tests for each declaration family.</p>
+<h2 id="hostile-header-tests"><a class="header" href="#hostile-header-tests">Hostile header tests</a></h2>
+<p><code>src/tests/hostile_headers.rs</code> covers edge-case and historically problematic C declarations:
+deep pointer nesting, anonymous structs/enums, specifier ordering variations, bitfield-only
+structs, extreme enum values, forward-then-define patterns, etc.</p>
+<h2 id="recovery-tests"><a class="header" href="#recovery-tests">Recovery tests</a></h2>
+<p><code>src/tests/recovery.rs</code> tests graceful handling of broken, incomplete, or unusual input.
+Uses both strict parsing (error expected) and resilient parsing (recovery expected).</p>
+<h2 id="contract-tests"><a class="header" href="#contract-tests">Contract tests</a></h2>
+<p><code>src/tests/contract.rs</code> and <code>src/tests/consumability.rs</code> verify that the <code>SourcePackage</code>
+contract is sufficient for downstream consumers. These test iteration patterns, type
+navigation, serialization, filtering, merging, and programmatic construction.</p>
+<h2 id="differential-tests"><a class="header" href="#differential-tests">Differential tests</a></h2>
+<p><code>src/tests/differential.rs</code> documents the known differences between pac extraction and
+bic extraction, ensuring behavioral equivalence on standard declarations and explicitly
+documenting intentional divergences (pointer model, no ABI fields, typedef chain
+preservation).</p>
+<h2 id="multi-file-scan-tests"><a class="header" href="#multi-file-scan-tests">Multi-file scan tests</a></h2>
+<p><code>src/tests/scan_multifile.rs</code> covers multi-header scanning scenarios: include chains,
+multiple entry headers, cross-file struct references, conditional compilation, include
+guards, include directory resolution, and metadata population.</p>
 <h2 id="adding-new-tests"><a class="header" href="#adding-new-tests">Adding new tests</a></h2>
 <p>A practical progression is:</p>
 <ol>
 <li>Add a <code>parse_api</code> unit test for the exact regression</li>
 <li>Add a reftest if you need a stable printed-tree expectation</li>
-<li>Add a full-app fixture if preprocessing or multi-file behavior matters</li>
+<li>Add an extraction test if the issue is about declaration modeling</li>
+<li>Add a scan test if preprocessing or multi-file behavior matters</li>
+<li>Add a full-app fixture if the case needs a full filesystem layout</li>
 </ol>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="diagnostics-and-printing"><a class="header" href="#diagnostics-and-printing">Diagnostics And Printing</a></h1>
@@ -1263,7 +1647,12 @@ lives.</p>
 </thead>
 <tbody>
 <tr><td><code>src/lib.rs</code></td><td>Public module exports</td></tr>
+<tr><td><code>src/ir/</code></td><td>Source-level IR (<code>SourcePackage</code>, <code>SourceType</code>, etc.)</td></tr>
+<tr><td><code>src/extract/</code></td><td>Declaration extraction from AST to IR</td></tr>
+<tr><td><code>src/scan/</code></td><td>Header scanning (preprocess + parse + extract)</td></tr>
+<tr><td><code>src/intake/</code></td><td>Preprocessed source intake</td></tr>
 <tr><td><code>src/driver.rs</code></td><td>File-based parsing via external preprocessing</td></tr>
+<tr><td><code>src/preprocess/</code></td><td>Built-in C preprocessor</td></tr>
 <tr><td><code>src/parse.rs</code></td><td>Direct fragment parsing API</td></tr>
 <tr><td><code>src/ast/</code></td><td>AST type definitions</td></tr>
 <tr><td><code>src/visit/</code></td><td>Recursive visitor functions and trait</td></tr>
@@ -1271,7 +1660,7 @@ lives.</p>
 <tr><td><code>src/loc.rs</code></td><td>Preprocessor line-marker location mapping</td></tr>
 <tr><td><code>src/span.rs</code></td><td><code>Span</code> and <code>Node&lt;T&gt;</code> wrappers</td></tr>
 <tr><td><code>src/print.rs</code></td><td>AST debug printer</td></tr>
-<tr><td><code>src/tests/</code></td><td>Test harnesses and integration-style parser tests</td></tr>
+<tr><td><code>src/tests/</code></td><td>Test harnesses and integration-style tests</td></tr>
 </tbody>
 </table>
 </div>
@@ -1341,7 +1730,12 @@ That split helps with three things:</p>
 <h2 id="public-versus-internal-boundaries"><a class="header" href="#public-versus-internal-boundaries">Public versus internal boundaries</a></h2>
 <p>These are normal consumer-facing modules:</p>
 <ul>
+<li><code>ir</code> (primary data contract)</li>
+<li><code>extract</code></li>
+<li><code>scan</code></li>
+<li><code>intake</code></li>
 <li><code>driver</code></li>
+<li><code>preprocess</code></li>
 <li><code>parse</code></li>
 <li><code>ast</code></li>
 <li><code>visit</code></li>
@@ -1364,14 +1758,15 @@ prefer the consumer-facing modules unless the chapter is specifically contributo
 <p>It is not a blanket promise about every future change. It is the current explicit guidance for how
 downstream tools should integrate with the crate without depending on internal parser details.</p>
 <h2 id="first-principle"><a class="header" href="#first-principle">First Principle</a></h2>
-<p><code>pac</code> is a parsing library.</p>
+<p><code>pac</code> is a C language frontend: preprocessing, parsing, and source-level semantic extraction.</p>
 <p>The intended downstream pattern is:</p>
 <ol>
-<li>parse source with <code>driver</code> or <code>parse</code></li>
-<li>consume typed AST values from <code>ast</code></li>
-<li>use <code>visit</code>, <code>span</code>, and <code>loc</code> to analyze and report on those values</li>
+<li>scan headers or parse source via <code>driver</code>, <code>scan</code>, or <code>parse</code></li>
+<li>extract normalized declarations via <code>extract</code></li>
+<li>consume the <code>SourcePackage</code> IR from <code>ir</code></li>
+<li>use <code>visit</code>, <code>span</code>, and <code>loc</code> to analyze AST-level details if needed</li>
 </ol>
-<p>Consumers should treat parser internals as implementation, not as the main integration surface.</p>
+<p>Downstream consumers (LINC, GERC) should depend on <code>pac::ir</code>, not on <code>pac::ast</code> directly.</p>
 <h2 id="preferred-public-surface"><a class="header" href="#preferred-public-surface">Preferred public surface</a></h2>
 <p>These are the main consumer-facing modules:</p>
 <div class="table-wrapper">
@@ -1380,9 +1775,14 @@ downstream tools should integrate with the crate without depending on internal p
 <tr><th>Module</th><th>Role</th><th>Current expectation</th></tr>
 </thead>
 <tbody>
-<tr><td><code>pac::driver</code></td><td>parse files and preprocessed source</td><td>preferred high-level entry point</td></tr>
+<tr><td><code>pac::ir</code></td><td>source-level IR (<code>SourcePackage</code>)</td><td><strong>preferred data contract</strong></td></tr>
+<tr><td><code>pac::extract</code></td><td>declaration extraction from AST</td><td>preferred extraction entry point</td></tr>
+<tr><td><code>pac::scan</code></td><td>header scanning (preprocess + extract)</td><td>preferred high-level entry point</td></tr>
+<tr><td><code>pac::intake</code></td><td>preprocessed source intake</td><td>preferred for already-preprocessed source</td></tr>
+<tr><td><code>pac::driver</code></td><td>parse files and preprocessed source</td><td>preferred parse entry point</td></tr>
+<tr><td><code>pac::preprocess</code></td><td>built-in C preprocessor</td><td>preferred preprocessing entry point</td></tr>
 <tr><td><code>pac::parse</code></td><td>parse string fragments directly</td><td>preferred low-level entry point</td></tr>
-<tr><td><code>pac::ast</code></td><td>typed syntax tree</td><td>preferred data contract</td></tr>
+<tr><td><code>pac::ast</code></td><td>typed syntax tree</td><td>internal data model</td></tr>
 <tr><td><code>pac::visit</code></td><td>recursive traversal hooks</td><td>preferred traversal API</td></tr>
 <tr><td><code>pac::span</code></td><td>byte-range metadata</td><td>preferred location primitive</td></tr>
 <tr><td><code>pac::loc</code></td><td>map offsets back to files/lines</td><td>preferred diagnostics helper</td></tr>
@@ -1414,8 +1814,14 @@ implementation details rather than the intended library boundary.</p>
 <h2 id="what-is-part-of-the-practical-contract"><a class="header" href="#what-is-part-of-the-practical-contract">What is part of the practical contract</a></h2>
 <p>Today the strongest practical contract is:</p>
 <ul>
-<li><code>driver::Config</code>, <code>Flavor</code>, <code>Parse</code>, <code>Error</code>, and <code>SyntaxError</code></li>
-<li><code>parse::{constant, expression, declaration, statement, translation_unit}</code></li>
+<li><code>ir::SourcePackage</code>, <code>SourceType</code>, <code>SourceItem</code>, and all IR types — the primary data contract</li>
+<li><code>extract::extract_from_source</code>, <code>extract_from_translation_unit</code>, <code>parse_and_extract</code>, <code>parse_and_extract_resilient</code></li>
+<li><code>scan::ScanConfig</code>, <code>scan_headers</code>, <code>ScanResult</code></li>
+<li><code>intake::PreprocessedInput</code></li>
+<li><code>ir::SourcePackageBuilder</code> — programmatic package construction</li>
+<li><code>driver::Config</code>, <code>Flavor</code>, <code>Parse</code>, <code>Error</code>, <code>SyntaxError</code>, <code>parse_builtin</code>, and <code>capture_macros</code></li>
+<li><code>preprocess::{Processor, IncludeResolver, MacroTable, Lexer, preprocess, tokens_to_text, Target, define_target_macros}</code></li>
+<li><code>parse::{constant, expression, declaration, statement, translation_unit, translation_unit_resilient}</code></li>
 <li>the AST model under <code>ast</code></li>
 <li>the traversal hooks under <code>visit</code></li>
 <li>the span/location model under <code>span</code> and <code>loc</code></li>
@@ -1434,21 +1840,22 @@ contract.</p>
 <h2 id="explicit-non-goals"><a class="header" href="#explicit-non-goals">Explicit non-goals</a></h2>
 <p>The current contract does not promise:</p>
 <ul>
-<li>preprocessing without a system C compiler in the <code>driver</code> path</li>
 <li>semantic name resolution beyond parsing decisions such as typedef handling</li>
 <li>type checking</li>
 <li>ABI compatibility guarantees</li>
 <li>full support for every GCC or Clang extension</li>
-<li>preservation of raw macro definitions as a first-class PAC output</li>
+<li>preservation of raw macro definitions beyond what <code>capture_macros</code> provides</li>
 </ul>
 <p>Those are outside the scope of PAC as a parser library.</p>
 <h2 id="downstream-posture"><a class="header" href="#downstream-posture">Downstream posture</a></h2>
 <p>For long-lived integrations, the safest posture is:</p>
 <ol>
-<li>keep your entry points at <code>driver</code> and <code>parse</code></li>
-<li>convert ASTs into your own analysis model if you need stricter invariants</li>
+<li>use <code>scan</code> or <code>extract</code> as your primary entry point — these produce <code>SourcePackage</code></li>
+<li>consume <code>ir::SourcePackage</code> rather than raw AST types where possible</li>
+<li>use <code>driver</code> and <code>parse</code> only when you need AST-level access</li>
 <li>treat unsupported syntax and parser errors as normal outcomes</li>
 <li>keep tests with representative preprocessed inputs for the syntax families you depend on</li>
+<li>see <a href="#migration-from-bic">Migration From bic</a> if you are transitioning from <code>bic</code></li>
 </ol>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="end-to-end-workflows"><a class="header" href="#end-to-end-workflows">End-To-End Workflows</a></h1>
@@ -1677,6 +2084,21 @@ match parse(&amp;Config::default(), "broken.c") {
     }
 }
 <span class="boring">}</span></code></pre>
+<h2 id="resilient-parsing"><a class="header" href="#resilient-parsing">Resilient parsing</a></h2>
+<p><code>parse::translation_unit_resilient</code> provides error recovery. When a declaration fails to parse, it
+skips to the next synchronization point (<code>;</code> at file scope or <code>}</code> at brace depth zero) and continues
+parsing.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::driver::Flavor;
+use pac::parse;
+
+let tu = parse::translation_unit_resilient(source, Flavor::GnuC11);
+// tu.0 contains all successfully parsed declarations
+// unparseable regions are silently skipped
+<span class="boring">}</span></code></pre>
+<p>Use this when you want partial results from files that contain unsupported syntax. The strict
+<code>translation_unit</code> function is still preferred when you need to detect all errors.</p>
 <h2 id="failure-model-guidance"><a class="header" href="#failure-model-guidance">Failure-model guidance</a></h2>
 <p>Downstream tools should treat parse failures as normal, reportable outcomes.</p>
 <p>That means:</p>
@@ -1743,6 +2165,45 @@ starting point.</p>
 </ul>
 <p>If your preprocessing and syntax assumptions are built around Clang, use <code>Config::with_clang()</code> or
 <code>Flavor::ClangC11</code>.</p>
+<h2 id="c23-keyword-support"><a class="header" href="#c23-keyword-support">C23 keyword support</a></h2>
+<p>PAC accepts the following C23 keywords in all flavors, because modern compilers (GCC 15+) emit them
+in preprocessed output by default:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>C23 keyword</th><th>C11 equivalent</th><th>Notes</th></tr>
+</thead>
+<tbody>
+<tr><td><code>bool</code></td><td><code>_Bool</code></td><td>type specifier</td></tr>
+<tr><td><code>true</code></td><td><code>1</code></td><td>parsed as integer constant</td></tr>
+<tr><td><code>false</code></td><td><code>0</code></td><td>parsed as integer constant</td></tr>
+<tr><td><code>nullptr</code></td><td><code>0</code></td><td>parsed as integer constant</td></tr>
+<tr><td><code>static_assert</code></td><td><code>_Static_assert</code></td><td>declaration</td></tr>
+<tr><td><code>alignas</code></td><td><code>_Alignas</code></td><td>alignment specifier</td></tr>
+<tr><td><code>alignof</code></td><td><code>_Alignof</code></td><td>expression</td></tr>
+<tr><td><code>thread_local</code></td><td><code>_Thread_local</code></td><td>storage class</td></tr>
+<tr><td><code>constexpr</code></td><td>(none)</td><td>storage class specifier</td></tr>
+<tr><td><code>typeof</code></td><td><code>__typeof__</code></td><td>type specifier (was GNU-only)</td></tr>
+<tr><td><code>_BitInt(N)</code></td><td>(none)</td><td>type specifier with width</td></tr>
+<tr><td><code>noreturn</code></td><td><code>_Noreturn</code></td><td>function specifier</td></tr>
+<tr><td><code>complex</code></td><td><code>_Complex</code></td><td>type specifier</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="gcc-extension-types"><a class="header" href="#gcc-extension-types">GCC extension types</a></h2>
+<p>PAC recognizes these GCC extension types in GNU mode:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Type</th><th>AST variant</th><th>Notes</th></tr>
+</thead>
+<tbody>
+<tr><td><code>__int128</code></td><td><code>TypeSpecifier::Int128</code></td><td>non-unique, combinable with <code>signed</code>/<code>unsigned</code></td></tr>
+<tr><td><code>__float128</code></td><td><code>TypeSpecifier::Float128</code></td><td>unique type specifier</td></tr>
+<tr><td><code>__builtin_va_list</code></td><td>typedef</td><td>handled as built-in typedef name</td></tr>
+</tbody>
+</table>
+</div>
 <h2 id="standard-mode-guidance"><a class="header" href="#standard-mode-guidance">Standard-mode guidance</a></h2>
 <p>Use <code>StdC11</code> when:</p>
 <ul>
@@ -2101,6 +2562,150 @@ later compiler stage?”</p>
 <h2 id="final-practical-rule"><a class="header" href="#final-practical-rule">Final practical rule</a></h2>
 <p>If a change would force a downstream PAC consumer to rethink how it parses, traverses, or reports
 on source, the book should say so explicitly in the same change.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="migration-from-bic"><a class="header" href="#migration-from-bic">Migration From bic</a></h1>
+<p>This chapter documents how to migrate downstream consumers from <code>bic</code>’s frontend extraction
+to <code>pac</code>’s <code>SourcePackage</code> contract.</p>
+<h2 id="why-migrate"><a class="header" href="#why-migrate">Why migrate</a></h2>
+<p><code>pac</code> now owns source-level declaration extraction. <code>bic</code>’s <code>extract.rs</code> was the legacy location
+for this logic. The canonical path is now:</p>
+<pre><code class="language-text">C headers  -&gt;  pac::scan / pac::extract  -&gt;  SourcePackage  -&gt;  downstream
+</code></pre>
+<p><code>bic</code> should consume <code>pac::ir::SourcePackage</code> instead of owning its own extraction.</p>
+<h2 id="type-mapping"><a class="header" href="#type-mapping">Type mapping</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>bic type</th><th>pac type</th><th>Notes</th></tr>
+</thead>
+<tbody>
+<tr><td><code>BindingPackage</code></td><td><code>SourcePackage</code></td><td>pac has no <code>layouts</code>, <code>link</code>, or <code>bic_version</code></td></tr>
+<tr><td><code>BindingItem</code></td><td><code>SourceItem</code></td><td>Same variant set</td></tr>
+<tr><td><code>BindingType</code></td><td><code>SourceType</code></td><td>Pointer model differs (see below)</td></tr>
+<tr><td><code>FunctionBinding</code></td><td><code>SourceFunction</code></td><td>Identical structure</td></tr>
+<tr><td><code>ParameterBinding</code></td><td><code>SourceParameter</code></td><td>Identical structure</td></tr>
+<tr><td><code>RecordBinding</code></td><td><code>SourceRecord</code></td><td>No <code>representation</code> or <code>abi_confidence</code></td></tr>
+<tr><td><code>FieldBinding</code></td><td><code>SourceField</code></td><td>No <code>layout</code> field</td></tr>
+<tr><td><code>EnumBinding</code></td><td><code>SourceEnum</code></td><td>Identical structure</td></tr>
+<tr><td><code>TypeAliasBinding</code></td><td><code>SourceTypeAlias</code></td><td>No <code>canonical_resolution</code></td></tr>
+<tr><td><code>VariableBinding</code></td><td><code>SourceVariable</code></td><td>Identical structure</td></tr>
+<tr><td><code>UnsupportedItem</code></td><td><code>SourceUnsupported</code></td><td>Identical structure</td></tr>
+<tr><td><code>CallingConvention</code></td><td><code>CallingConvention</code></td><td>pac version includes <code>Unknown(String)</code></td></tr>
+<tr><td><code>TypeQualifiers</code></td><td><code>TypeQualifiers</code></td><td>Identical structure</td></tr>
+<tr><td><code>BindingTarget</code></td><td><code>SourceTarget</code></td><td>Identical structure</td></tr>
+<tr><td><code>BindingInputs</code></td><td><code>SourceInputs</code></td><td>Identical structure</td></tr>
+<tr><td><code>BindingDefine</code></td><td><code>SourceDefine</code></td><td>Identical structure</td></tr>
+<tr><td><code>MacroBinding</code></td><td><code>SourceMacro</code></td><td>pac drops <code>function_like</code> and <code>category</code></td></tr>
+<tr><td><code>DeclarationProvenance</code></td><td><code>DeclarationProvenance</code></td><td>Identical structure</td></tr>
+<tr><td><code>MacroProvenance</code></td><td><code>MacroProvenance</code></td><td>Identical structure</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="pointer-model-difference"><a class="header" href="#pointer-model-difference">Pointer model difference</a></h2>
+<p>bic:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>Pointer {
+    pointee: Box&lt;BindingType&gt;,
+    const_pointee: bool,      // whether pointee is const
+    qualifiers: TypeQualifiers, // qualifiers on the pointer itself
+}
+<span class="boring">}</span></code></pre>
+<p>pac:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>Pointer {
+    pointee: Box&lt;SourceType&gt;,
+    qualifiers: TypeQualifiers, // is_const means pointee is const
+}
+<span class="boring">}</span></code></pre>
+<p>In pac, <code>qualifiers.is_const</code> on a <code>Pointer</code> indicates that the pointee is const-qualified.
+Use <code>SourceType::const_ptr(inner)</code> and <code>SourceType::ptr(inner)</code> as constructors.</p>
+<h2 id="missing-fields-in-pac"><a class="header" href="#missing-fields-in-pac">Missing fields in pac</a></h2>
+<p>These bic fields are intentionally absent from pac because they belong to the link/ABI layer:</p>
+<ul>
+<li><code>FieldBinding.layout</code> (field offset) — use LINC probing</li>
+<li><code>RecordBinding.representation</code> — use LINC probing</li>
+<li><code>RecordBinding.abi_confidence</code> — use LINC validation</li>
+<li><code>TypeAliasBinding.canonical_resolution</code> — pac preserves <code>TypedefRef</code> chains</li>
+<li><code>BindingPackage.layouts</code> — use LINC probing</li>
+<li><code>BindingPackage.link</code> — use LINC link surface</li>
+<li><code>BindingPackage.effective_macro_environment</code> — use LINC macro analysis</li>
+</ul>
+<h2 id="migration-steps"><a class="header" href="#migration-steps">Migration steps</a></h2>
+<h3 id="step-1-replace-extraction-call"><a class="header" href="#step-1-replace-extraction-call">Step 1: Replace extraction call</a></h3>
+<p>Before:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use bic::extract::Extractor;
+use bic::ir::BindingPackage;
+
+let extractor = Extractor::new();
+let (items, diagnostics) = extractor.extract(&amp;unit);
+let mut pkg = BindingPackage::new();
+pkg.items = items;
+<span class="boring">}</span></code></pre>
+<p>After:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::extract;
+use pac::ir::SourcePackage;
+
+let pkg = extract::extract_from_translation_unit(&amp;unit, Some("header.h".into()));
+<span class="boring">}</span></code></pre>
+<p>Or for end-to-end scanning:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::scan::{ScanConfig, scan_headers};
+
+let config = ScanConfig::new()
+    .entry_header("header.h")
+    .with_builtin_preprocessor();
+let result = scan_headers(&amp;config).unwrap();
+let pkg: &amp;SourcePackage = &amp;result.package;
+<span class="boring">}</span></code></pre>
+<h3 id="step-2-update-type-references"><a class="header" href="#step-2-update-type-references">Step 2: Update type references</a></h3>
+<p>Replace all uses of <code>BindingType</code> with <code>SourceType</code>, <code>BindingItem</code> with <code>SourceItem</code>, etc.
+The variant names are identical.</p>
+<h3 id="step-3-handle-pointer-model"><a class="header" href="#step-3-handle-pointer-model">Step 3: Handle pointer model</a></h3>
+<p>Replace <code>const_pointee</code> checks:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// Before (bic)
+if let BindingType::Pointer { const_pointee: true, .. } = ty { ... }
+
+// After (pac)
+if let SourceType::Pointer { qualifiers, .. } = ty {
+    if qualifiers.is_const { ... }
+}
+<span class="boring">}</span></code></pre>
+<h3 id="step-4-remove-abi-fields"><a class="header" href="#step-4-remove-abi-fields">Step 4: Remove ABI fields</a></h3>
+<p>Any code that reads <code>FieldBinding.layout</code>, <code>RecordBinding.representation</code>, or
+<code>RecordBinding.abi_confidence</code> should be moved to LINC’s domain.</p>
+<h3 id="step-5-use-builder-for-programmatic-construction"><a class="header" href="#step-5-use-builder-for-programmatic-construction">Step 5: Use builder for programmatic construction</a></h3>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::ir::{SourcePackageBuilder, SourceItem, SourceFunction, ...};
+
+let pkg = SourcePackageBuilder::new()
+    .source_path("api.h")
+    .item(SourceItem::Function(func))
+    .item(SourceItem::Record(rec))
+    .build();
+<span class="boring">}</span></code></pre>
+<h2 id="api-reference"><a class="header" href="#api-reference">API reference</a></h2>
+<p>Key public APIs for downstream consumers:</p>
+<ul>
+<li><code>pac::extract::extract_from_source(src)</code> — parse and extract</li>
+<li><code>pac::extract::extract_from_translation_unit(unit, path)</code> — extract from AST</li>
+<li><code>pac::extract::parse_and_extract(src, flavor)</code> — with flavor control</li>
+<li><code>pac::extract::parse_and_extract_resilient(src, flavor)</code> — with error recovery</li>
+<li><code>pac::scan::scan_headers(config)</code> — end-to-end header scanning</li>
+<li><code>pac::ir::SourcePackage</code> — the contract type</li>
+<li><code>pac::ir::SourcePackageBuilder</code> — programmatic construction</li>
+<li><code>SourcePackage::retain_items(pred)</code> — filter items</li>
+<li><code>SourcePackage::merge(other)</code> — combine packages</li>
+</ul>
 
                     </main>
 

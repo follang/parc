@@ -35,10 +35,10 @@
             const path_to_root = "";
             const default_light_theme = "navy";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-89753dc1.js";
+            window.path_to_searchindex_js = "searchindex-c5b10b10.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-e600abd2.js"></script>
+        <script src="toc-5d57fb77.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -186,7 +186,12 @@ lives.</p>
 </thead>
 <tbody>
 <tr><td><code>src/lib.rs</code></td><td>Public module exports</td></tr>
+<tr><td><code>src/ir/</code></td><td>Source-level IR (<code>SourcePackage</code>, <code>SourceType</code>, etc.)</td></tr>
+<tr><td><code>src/extract/</code></td><td>Declaration extraction from AST to IR</td></tr>
+<tr><td><code>src/scan/</code></td><td>Header scanning (preprocess + parse + extract)</td></tr>
+<tr><td><code>src/intake/</code></td><td>Preprocessed source intake</td></tr>
 <tr><td><code>src/driver.rs</code></td><td>File-based parsing via external preprocessing</td></tr>
+<tr><td><code>src/preprocess/</code></td><td>Built-in C preprocessor</td></tr>
 <tr><td><code>src/parse.rs</code></td><td>Direct fragment parsing API</td></tr>
 <tr><td><code>src/ast/</code></td><td>AST type definitions</td></tr>
 <tr><td><code>src/visit/</code></td><td>Recursive visitor functions and trait</td></tr>
@@ -194,7 +199,7 @@ lives.</p>
 <tr><td><code>src/loc.rs</code></td><td>Preprocessor line-marker location mapping</td></tr>
 <tr><td><code>src/span.rs</code></td><td><code>Span</code> and <code>Node&lt;T&gt;</code> wrappers</td></tr>
 <tr><td><code>src/print.rs</code></td><td>AST debug printer</td></tr>
-<tr><td><code>src/tests/</code></td><td>Test harnesses and integration-style parser tests</td></tr>
+<tr><td><code>src/tests/</code></td><td>Test harnesses and integration-style tests</td></tr>
 </tbody>
 </table>
 </div>
@@ -264,7 +269,12 @@ That split helps with three things:</p>
 <h2 id="public-versus-internal-boundaries"><a class="header" href="#public-versus-internal-boundaries">Public versus internal boundaries</a></h2>
 <p>These are normal consumer-facing modules:</p>
 <ul>
+<li><code>ir</code> (primary data contract)</li>
+<li><code>extract</code></li>
+<li><code>scan</code></li>
+<li><code>intake</code></li>
 <li><code>driver</code></li>
+<li><code>preprocess</code></li>
 <li><code>parse</code></li>
 <li><code>ast</code></li>
 <li><code>visit</code></li>

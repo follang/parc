@@ -35,10 +35,10 @@
             const path_to_root = "";
             const default_light_theme = "navy";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-89753dc1.js";
+            window.path_to_searchindex_js = "searchindex-c5b10b10.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-e600abd2.js"></script>
+        <script src="toc-5d57fb77.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -274,6 +274,21 @@ match parse(&amp;Config::default(), "broken.c") {
     }
 }
 <span class="boring">}</span></code></pre>
+<h2 id="resilient-parsing"><a class="header" href="#resilient-parsing">Resilient parsing</a></h2>
+<p><code>parse::translation_unit_resilient</code> provides error recovery. When a declaration fails to parse, it
+skips to the next synchronization point (<code>;</code> at file scope or <code>}</code> at brace depth zero) and continues
+parsing.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::driver::Flavor;
+use pac::parse;
+
+let tu = parse::translation_unit_resilient(source, Flavor::GnuC11);
+// tu.0 contains all successfully parsed declarations
+// unparseable regions are silently skipped
+<span class="boring">}</span></code></pre>
+<p>Use this when you want partial results from files that contain unsupported syntax. The strict
+<code>translation_unit</code> function is still preferred when you need to detect all errors.</p>
 <h2 id="failure-model-guidance"><a class="header" href="#failure-model-guidance">Failure-model guidance</a></h2>
 <p>Downstream tools should treat parse failures as normal, reportable outcomes.</p>
 <p>That means:</p>

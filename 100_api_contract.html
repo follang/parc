@@ -35,10 +35,10 @@
             const path_to_root = "";
             const default_light_theme = "navy";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-89753dc1.js";
+            window.path_to_searchindex_js = "searchindex-c5b10b10.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-e600abd2.js"></script>
+        <script src="toc-5d57fb77.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -179,14 +179,15 @@
 <p>It is not a blanket promise about every future change. It is the current explicit guidance for how
 downstream tools should integrate with the crate without depending on internal parser details.</p>
 <h2 id="first-principle"><a class="header" href="#first-principle">First Principle</a></h2>
-<p><code>pac</code> is a parsing library.</p>
+<p><code>pac</code> is a C language frontend: preprocessing, parsing, and source-level semantic extraction.</p>
 <p>The intended downstream pattern is:</p>
 <ol>
-<li>parse source with <code>driver</code> or <code>parse</code></li>
-<li>consume typed AST values from <code>ast</code></li>
-<li>use <code>visit</code>, <code>span</code>, and <code>loc</code> to analyze and report on those values</li>
+<li>scan headers or parse source via <code>driver</code>, <code>scan</code>, or <code>parse</code></li>
+<li>extract normalized declarations via <code>extract</code></li>
+<li>consume the <code>SourcePackage</code> IR from <code>ir</code></li>
+<li>use <code>visit</code>, <code>span</code>, and <code>loc</code> to analyze AST-level details if needed</li>
 </ol>
-<p>Consumers should treat parser internals as implementation, not as the main integration surface.</p>
+<p>Downstream consumers (LINC, GERC) should depend on <code>pac::ir</code>, not on <code>pac::ast</code> directly.</p>
 <h2 id="preferred-public-surface"><a class="header" href="#preferred-public-surface">Preferred public surface</a></h2>
 <p>These are the main consumer-facing modules:</p>
 <div class="table-wrapper">
@@ -195,9 +196,14 @@ downstream tools should integrate with the crate without depending on internal p
 <tr><th>Module</th><th>Role</th><th>Current expectation</th></tr>
 </thead>
 <tbody>
-<tr><td><code>pac::driver</code></td><td>parse files and preprocessed source</td><td>preferred high-level entry point</td></tr>
+<tr><td><code>pac::ir</code></td><td>source-level IR (<code>SourcePackage</code>)</td><td><strong>preferred data contract</strong></td></tr>
+<tr><td><code>pac::extract</code></td><td>declaration extraction from AST</td><td>preferred extraction entry point</td></tr>
+<tr><td><code>pac::scan</code></td><td>header scanning (preprocess + extract)</td><td>preferred high-level entry point</td></tr>
+<tr><td><code>pac::intake</code></td><td>preprocessed source intake</td><td>preferred for already-preprocessed source</td></tr>
+<tr><td><code>pac::driver</code></td><td>parse files and preprocessed source</td><td>preferred parse entry point</td></tr>
+<tr><td><code>pac::preprocess</code></td><td>built-in C preprocessor</td><td>preferred preprocessing entry point</td></tr>
 <tr><td><code>pac::parse</code></td><td>parse string fragments directly</td><td>preferred low-level entry point</td></tr>
-<tr><td><code>pac::ast</code></td><td>typed syntax tree</td><td>preferred data contract</td></tr>
+<tr><td><code>pac::ast</code></td><td>typed syntax tree</td><td>internal data model</td></tr>
 <tr><td><code>pac::visit</code></td><td>recursive traversal hooks</td><td>preferred traversal API</td></tr>
 <tr><td><code>pac::span</code></td><td>byte-range metadata</td><td>preferred location primitive</td></tr>
 <tr><td><code>pac::loc</code></td><td>map offsets back to files/lines</td><td>preferred diagnostics helper</td></tr>
@@ -229,8 +235,14 @@ implementation details rather than the intended library boundary.</p>
 <h2 id="what-is-part-of-the-practical-contract"><a class="header" href="#what-is-part-of-the-practical-contract">What is part of the practical contract</a></h2>
 <p>Today the strongest practical contract is:</p>
 <ul>
-<li><code>driver::Config</code>, <code>Flavor</code>, <code>Parse</code>, <code>Error</code>, and <code>SyntaxError</code></li>
-<li><code>parse::{constant, expression, declaration, statement, translation_unit}</code></li>
+<li><code>ir::SourcePackage</code>, <code>SourceType</code>, <code>SourceItem</code>, and all IR types — the primary data contract</li>
+<li><code>extract::extract_from_source</code>, <code>extract_from_translation_unit</code>, <code>parse_and_extract</code>, <code>parse_and_extract_resilient</code></li>
+<li><code>scan::ScanConfig</code>, <code>scan_headers</code>, <code>ScanResult</code></li>
+<li><code>intake::PreprocessedInput</code></li>
+<li><code>ir::SourcePackageBuilder</code> — programmatic package construction</li>
+<li><code>driver::Config</code>, <code>Flavor</code>, <code>Parse</code>, <code>Error</code>, <code>SyntaxError</code>, <code>parse_builtin</code>, and <code>capture_macros</code></li>
+<li><code>preprocess::{Processor, IncludeResolver, MacroTable, Lexer, preprocess, tokens_to_text, Target, define_target_macros}</code></li>
+<li><code>parse::{constant, expression, declaration, statement, translation_unit, translation_unit_resilient}</code></li>
 <li>the AST model under <code>ast</code></li>
 <li>the traversal hooks under <code>visit</code></li>
 <li>the span/location model under <code>span</code> and <code>loc</code></li>
@@ -249,21 +261,22 @@ contract.</p>
 <h2 id="explicit-non-goals"><a class="header" href="#explicit-non-goals">Explicit non-goals</a></h2>
 <p>The current contract does not promise:</p>
 <ul>
-<li>preprocessing without a system C compiler in the <code>driver</code> path</li>
 <li>semantic name resolution beyond parsing decisions such as typedef handling</li>
 <li>type checking</li>
 <li>ABI compatibility guarantees</li>
 <li>full support for every GCC or Clang extension</li>
-<li>preservation of raw macro definitions as a first-class PAC output</li>
+<li>preservation of raw macro definitions beyond what <code>capture_macros</code> provides</li>
 </ul>
 <p>Those are outside the scope of PAC as a parser library.</p>
 <h2 id="downstream-posture"><a class="header" href="#downstream-posture">Downstream posture</a></h2>
 <p>For long-lived integrations, the safest posture is:</p>
 <ol>
-<li>keep your entry points at <code>driver</code> and <code>parse</code></li>
-<li>convert ASTs into your own analysis model if you need stricter invariants</li>
+<li>use <code>scan</code> or <code>extract</code> as your primary entry point — these produce <code>SourcePackage</code></li>
+<li>consume <code>ir::SourcePackage</code> rather than raw AST types where possible</li>
+<li>use <code>driver</code> and <code>parse</code> only when you need AST-level access</li>
 <li>treat unsupported syntax and parser errors as normal outcomes</li>
 <li>keep tests with representative preprocessed inputs for the syntax families you depend on</li>
+<li>see <a href="./210_migration_from_bic.html">Migration From bic</a> if you are transitioning from <code>bic</code></li>
 </ol>
 
                     </main>

@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Parser Boundaries - PAC Reference</title>
+        <title>Header Scanning - PAC Reference</title>
 
 
         <!-- Custom HTML head -->
@@ -174,59 +174,77 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="parser-boundaries"><a class="header" href="#parser-boundaries">Parser Boundaries</a></h1>
-<p>This chapter explains where PAC starts and where it intentionally stops.</p>
-<h2 id="pac-owns-syntax-parsing"><a class="header" href="#pac-owns-syntax-parsing">PAC owns syntax parsing</a></h2>
-<p>PAC is responsible for:</p>
+                        <h1 id="header-scanning"><a class="header" href="#header-scanning">Header Scanning</a></h1>
+<p>The <code>pac::scan</code> module provides end-to-end header scanning: preprocess
+C headers and extract a <code>SourcePackage</code> in one step.</p>
+<h2 id="quick-start"><a class="header" href="#quick-start">Quick Start</a></h2>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::scan::{ScanConfig, scan_headers};
+
+let config = ScanConfig::new()
+    .entry_header("api.h")
+    .include_dir("/usr/include")
+    .define_flag("NDEBUG")
+    .with_builtin_preprocessor();
+
+let result = scan_headers(&amp;config).unwrap();
+let pkg = result.package;
+<span class="boring">}</span></code></pre>
+<h2 id="scanconfig"><a class="header" href="#scanconfig">ScanConfig</a></h2>
+<p>Builder for scan configuration:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Method</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>entry_header(path)</code></td><td>Add an entry-point header</td></tr>
+<tr><td><code>include_dir(path)</code></td><td>Add a preprocessor include search path</td></tr>
+<tr><td><code>define(name, value)</code></td><td>Add a preprocessor define with value</td></tr>
+<tr><td><code>define_flag(name)</code></td><td>Add a flag-style define (no value)</td></tr>
+<tr><td><code>with_compiler(cmd)</code></td><td>Set the external preprocessor command</td></tr>
+<tr><td><code>with_flavor(flavor)</code></td><td>Set the parser flavor</td></tr>
+<tr><td><code>with_builtin_preprocessor()</code></td><td>Use the built-in preprocessor</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="preprocessing-modes"><a class="header" href="#preprocessing-modes">Preprocessing Modes</a></h2>
+<h3 id="external-default"><a class="header" href="#external-default">External (default)</a></h3>
+<p>Uses <code>gcc -E</code> or <code>clang -E</code> to preprocess headers. Requires the
+compiler to be installed. Supports all system headers.</p>
+<h3 id="built-in"><a class="header" href="#built-in">Built-in</a></h3>
+<p>Uses <code>pac::preprocess</code> for self-contained headers that don’t need
+system includes. No external compiler required.</p>
+<h2 id="scanresult"><a class="header" href="#scanresult">ScanResult</a></h2>
+<p>The scan produces:</p>
 <ul>
-<li>accepting supported C syntax</li>
-<li>building an AST</li>
-<li>carrying spans</li>
-<li>mapping parse positions back through preprocessor line markers</li>
+<li><code>package: SourcePackage</code> — the extracted declarations and metadata</li>
+<li><code>preprocessed_source: String</code> — the preprocessed source text</li>
 </ul>
-<p>That is the core boundary of the crate.</p>
-<h2 id="pac-does-not-own-full-compilation"><a class="header" href="#pac-does-not-own-full-compilation">PAC does not own full compilation</a></h2>
-<p>PAC does not attempt to be:</p>
-<ul>
-<li>a full preprocessor implementation</li>
-<li>a type checker</li>
-<li>a linker-aware analyzer</li>
-<li>a code generator</li>
-<li>a full semantic compiler frontend</li>
-</ul>
-<p>These are not accidental omissions. They are part of the intended scope boundary.</p>
-<h2 id="practical-layering"><a class="header" href="#practical-layering">Practical layering</a></h2>
-<p>A healthy toolchain boundary looks like this:</p>
-<ol>
-<li>a compiler or preprocessor produces acceptable input</li>
-<li>PAC parses it</li>
-<li>a later layer performs semantic analysis, policy checks, or code generation</li>
-</ol>
-<p>This keeps PAC focused on syntax and source structure.</p>
-<h2 id="why-this-matters-for-consumers"><a class="header" href="#why-this-matters-for-consumers">Why this matters for consumers</a></h2>
-<p>If a downstream tool needs:</p>
-<ul>
-<li>ABI guarantees</li>
-<li>linker truth</li>
-<li>semantic type equivalence</li>
-<li>macro inventories as data</li>
-</ul>
-<p>then PAC should be one component in the pipeline, not the whole pipeline.</p>
-<h2 id="why-this-matters-for-contributors"><a class="header" href="#why-this-matters-for-contributors">Why this matters for contributors</a></h2>
-<p>When deciding whether a new feature belongs in PAC, a useful question is:</p>
-<p>“Does this improve PAC’s syntax parsing and source-structure contract, or does it drag PAC into a
-later compiler stage?”</p>
-<p>If it is mostly a later-stage concern, it probably belongs outside PAC.</p>
+<h2 id="intake"><a class="header" href="#intake">Intake</a></h2>
+<p>For already-preprocessed source (e.g., output of <code>gcc -E</code>), use
+<code>pac::intake::PreprocessedInput</code>:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::intake::PreprocessedInput;
+
+let input = PreprocessedInput::from_string("int foo(void);")
+    .with_path("output.i")
+    .with_flavor(pac::driver::Flavor::GnuC11);
+
+let pkg = input.extract();
+<span class="boring">}</span></code></pre>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="180_support_tiers.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="027_extraction.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="200_release_checklist.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="030_parser.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -236,11 +254,11 @@ later compiler stage?”</p>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="180_support_tiers.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="027_extraction.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="200_release_checklist.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="030_parser.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Parser Boundaries - PAC Reference</title>
+        <title>Migration From bic - PAC Reference</title>
 
 
         <!-- Custom HTML head -->
@@ -174,61 +174,158 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="parser-boundaries"><a class="header" href="#parser-boundaries">Parser Boundaries</a></h1>
-<p>This chapter explains where PAC starts and where it intentionally stops.</p>
-<h2 id="pac-owns-syntax-parsing"><a class="header" href="#pac-owns-syntax-parsing">PAC owns syntax parsing</a></h2>
-<p>PAC is responsible for:</p>
+                        <h1 id="migration-from-bic"><a class="header" href="#migration-from-bic">Migration From bic</a></h1>
+<p>This chapter documents how to migrate downstream consumers from <code>bic</code>’s frontend extraction
+to <code>pac</code>’s <code>SourcePackage</code> contract.</p>
+<h2 id="why-migrate"><a class="header" href="#why-migrate">Why migrate</a></h2>
+<p><code>pac</code> now owns source-level declaration extraction. <code>bic</code>’s <code>extract.rs</code> was the legacy location
+for this logic. The canonical path is now:</p>
+<pre><code class="language-text">C headers  -&gt;  pac::scan / pac::extract  -&gt;  SourcePackage  -&gt;  downstream
+</code></pre>
+<p><code>bic</code> should consume <code>pac::ir::SourcePackage</code> instead of owning its own extraction.</p>
+<h2 id="type-mapping"><a class="header" href="#type-mapping">Type mapping</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>bic type</th><th>pac type</th><th>Notes</th></tr>
+</thead>
+<tbody>
+<tr><td><code>BindingPackage</code></td><td><code>SourcePackage</code></td><td>pac has no <code>layouts</code>, <code>link</code>, or <code>bic_version</code></td></tr>
+<tr><td><code>BindingItem</code></td><td><code>SourceItem</code></td><td>Same variant set</td></tr>
+<tr><td><code>BindingType</code></td><td><code>SourceType</code></td><td>Pointer model differs (see below)</td></tr>
+<tr><td><code>FunctionBinding</code></td><td><code>SourceFunction</code></td><td>Identical structure</td></tr>
+<tr><td><code>ParameterBinding</code></td><td><code>SourceParameter</code></td><td>Identical structure</td></tr>
+<tr><td><code>RecordBinding</code></td><td><code>SourceRecord</code></td><td>No <code>representation</code> or <code>abi_confidence</code></td></tr>
+<tr><td><code>FieldBinding</code></td><td><code>SourceField</code></td><td>No <code>layout</code> field</td></tr>
+<tr><td><code>EnumBinding</code></td><td><code>SourceEnum</code></td><td>Identical structure</td></tr>
+<tr><td><code>TypeAliasBinding</code></td><td><code>SourceTypeAlias</code></td><td>No <code>canonical_resolution</code></td></tr>
+<tr><td><code>VariableBinding</code></td><td><code>SourceVariable</code></td><td>Identical structure</td></tr>
+<tr><td><code>UnsupportedItem</code></td><td><code>SourceUnsupported</code></td><td>Identical structure</td></tr>
+<tr><td><code>CallingConvention</code></td><td><code>CallingConvention</code></td><td>pac version includes <code>Unknown(String)</code></td></tr>
+<tr><td><code>TypeQualifiers</code></td><td><code>TypeQualifiers</code></td><td>Identical structure</td></tr>
+<tr><td><code>BindingTarget</code></td><td><code>SourceTarget</code></td><td>Identical structure</td></tr>
+<tr><td><code>BindingInputs</code></td><td><code>SourceInputs</code></td><td>Identical structure</td></tr>
+<tr><td><code>BindingDefine</code></td><td><code>SourceDefine</code></td><td>Identical structure</td></tr>
+<tr><td><code>MacroBinding</code></td><td><code>SourceMacro</code></td><td>pac drops <code>function_like</code> and <code>category</code></td></tr>
+<tr><td><code>DeclarationProvenance</code></td><td><code>DeclarationProvenance</code></td><td>Identical structure</td></tr>
+<tr><td><code>MacroProvenance</code></td><td><code>MacroProvenance</code></td><td>Identical structure</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="pointer-model-difference"><a class="header" href="#pointer-model-difference">Pointer model difference</a></h2>
+<p>bic:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>Pointer {
+    pointee: Box&lt;BindingType&gt;,
+    const_pointee: bool,      // whether pointee is const
+    qualifiers: TypeQualifiers, // qualifiers on the pointer itself
+}
+<span class="boring">}</span></code></pre>
+<p>pac:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>Pointer {
+    pointee: Box&lt;SourceType&gt;,
+    qualifiers: TypeQualifiers, // is_const means pointee is const
+}
+<span class="boring">}</span></code></pre>
+<p>In pac, <code>qualifiers.is_const</code> on a <code>Pointer</code> indicates that the pointee is const-qualified.
+Use <code>SourceType::const_ptr(inner)</code> and <code>SourceType::ptr(inner)</code> as constructors.</p>
+<h2 id="missing-fields-in-pac"><a class="header" href="#missing-fields-in-pac">Missing fields in pac</a></h2>
+<p>These bic fields are intentionally absent from pac because they belong to the link/ABI layer:</p>
 <ul>
-<li>accepting supported C syntax</li>
-<li>building an AST</li>
-<li>carrying spans</li>
-<li>mapping parse positions back through preprocessor line markers</li>
+<li><code>FieldBinding.layout</code> (field offset) — use LINC probing</li>
+<li><code>RecordBinding.representation</code> — use LINC probing</li>
+<li><code>RecordBinding.abi_confidence</code> — use LINC validation</li>
+<li><code>TypeAliasBinding.canonical_resolution</code> — pac preserves <code>TypedefRef</code> chains</li>
+<li><code>BindingPackage.layouts</code> — use LINC probing</li>
+<li><code>BindingPackage.link</code> — use LINC link surface</li>
+<li><code>BindingPackage.effective_macro_environment</code> — use LINC macro analysis</li>
 </ul>
-<p>That is the core boundary of the crate.</p>
-<h2 id="pac-does-not-own-full-compilation"><a class="header" href="#pac-does-not-own-full-compilation">PAC does not own full compilation</a></h2>
-<p>PAC does not attempt to be:</p>
+<h2 id="migration-steps"><a class="header" href="#migration-steps">Migration steps</a></h2>
+<h3 id="step-1-replace-extraction-call"><a class="header" href="#step-1-replace-extraction-call">Step 1: Replace extraction call</a></h3>
+<p>Before:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use bic::extract::Extractor;
+use bic::ir::BindingPackage;
+
+let extractor = Extractor::new();
+let (items, diagnostics) = extractor.extract(&amp;unit);
+let mut pkg = BindingPackage::new();
+pkg.items = items;
+<span class="boring">}</span></code></pre>
+<p>After:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::extract;
+use pac::ir::SourcePackage;
+
+let pkg = extract::extract_from_translation_unit(&amp;unit, Some("header.h".into()));
+<span class="boring">}</span></code></pre>
+<p>Or for end-to-end scanning:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::scan::{ScanConfig, scan_headers};
+
+let config = ScanConfig::new()
+    .entry_header("header.h")
+    .with_builtin_preprocessor();
+let result = scan_headers(&amp;config).unwrap();
+let pkg: &amp;SourcePackage = &amp;result.package;
+<span class="boring">}</span></code></pre>
+<h3 id="step-2-update-type-references"><a class="header" href="#step-2-update-type-references">Step 2: Update type references</a></h3>
+<p>Replace all uses of <code>BindingType</code> with <code>SourceType</code>, <code>BindingItem</code> with <code>SourceItem</code>, etc.
+The variant names are identical.</p>
+<h3 id="step-3-handle-pointer-model"><a class="header" href="#step-3-handle-pointer-model">Step 3: Handle pointer model</a></h3>
+<p>Replace <code>const_pointee</code> checks:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// Before (bic)
+if let BindingType::Pointer { const_pointee: true, .. } = ty { ... }
+
+// After (pac)
+if let SourceType::Pointer { qualifiers, .. } = ty {
+    if qualifiers.is_const { ... }
+}
+<span class="boring">}</span></code></pre>
+<h3 id="step-4-remove-abi-fields"><a class="header" href="#step-4-remove-abi-fields">Step 4: Remove ABI fields</a></h3>
+<p>Any code that reads <code>FieldBinding.layout</code>, <code>RecordBinding.representation</code>, or
+<code>RecordBinding.abi_confidence</code> should be moved to LINC’s domain.</p>
+<h3 id="step-5-use-builder-for-programmatic-construction"><a class="header" href="#step-5-use-builder-for-programmatic-construction">Step 5: Use builder for programmatic construction</a></h3>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::ir::{SourcePackageBuilder, SourceItem, SourceFunction, ...};
+
+let pkg = SourcePackageBuilder::new()
+    .source_path("api.h")
+    .item(SourceItem::Function(func))
+    .item(SourceItem::Record(rec))
+    .build();
+<span class="boring">}</span></code></pre>
+<h2 id="api-reference"><a class="header" href="#api-reference">API reference</a></h2>
+<p>Key public APIs for downstream consumers:</p>
 <ul>
-<li>a full preprocessor implementation</li>
-<li>a type checker</li>
-<li>a linker-aware analyzer</li>
-<li>a code generator</li>
-<li>a full semantic compiler frontend</li>
+<li><code>pac::extract::extract_from_source(src)</code> — parse and extract</li>
+<li><code>pac::extract::extract_from_translation_unit(unit, path)</code> — extract from AST</li>
+<li><code>pac::extract::parse_and_extract(src, flavor)</code> — with flavor control</li>
+<li><code>pac::extract::parse_and_extract_resilient(src, flavor)</code> — with error recovery</li>
+<li><code>pac::scan::scan_headers(config)</code> — end-to-end header scanning</li>
+<li><code>pac::ir::SourcePackage</code> — the contract type</li>
+<li><code>pac::ir::SourcePackageBuilder</code> — programmatic construction</li>
+<li><code>SourcePackage::retain_items(pred)</code> — filter items</li>
+<li><code>SourcePackage::merge(other)</code> — combine packages</li>
 </ul>
-<p>These are not accidental omissions. They are part of the intended scope boundary.</p>
-<h2 id="practical-layering"><a class="header" href="#practical-layering">Practical layering</a></h2>
-<p>A healthy toolchain boundary looks like this:</p>
-<ol>
-<li>a compiler or preprocessor produces acceptable input</li>
-<li>PAC parses it</li>
-<li>a later layer performs semantic analysis, policy checks, or code generation</li>
-</ol>
-<p>This keeps PAC focused on syntax and source structure.</p>
-<h2 id="why-this-matters-for-consumers"><a class="header" href="#why-this-matters-for-consumers">Why this matters for consumers</a></h2>
-<p>If a downstream tool needs:</p>
-<ul>
-<li>ABI guarantees</li>
-<li>linker truth</li>
-<li>semantic type equivalence</li>
-<li>macro inventories as data</li>
-</ul>
-<p>then PAC should be one component in the pipeline, not the whole pipeline.</p>
-<h2 id="why-this-matters-for-contributors"><a class="header" href="#why-this-matters-for-contributors">Why this matters for contributors</a></h2>
-<p>When deciding whether a new feature belongs in PAC, a useful question is:</p>
-<p>“Does this improve PAC’s syntax parsing and source-structure contract, or does it drag PAC into a
-later compiler stage?”</p>
-<p>If it is mostly a later-stage concern, it probably belongs outside PAC.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="180_support_tiers.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="200_release_checklist.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="200_release_checklist.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
-                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
-                            </a>
 
                         <div style="clear: both"></div>
                     </nav>
@@ -236,13 +333,10 @@ later compiler stage?”</p>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="180_support_tiers.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="200_release_checklist.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="200_release_checklist.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
-                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
-                    </a>
             </nav>
 
         </div>

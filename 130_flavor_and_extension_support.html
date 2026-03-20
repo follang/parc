@@ -35,10 +35,10 @@
             const path_to_root = "";
             const default_light_theme = "navy";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-89753dc1.js";
+            window.path_to_searchindex_js = "searchindex-c5b10b10.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-e600abd2.js"></script>
+        <script src="toc-5d57fb77.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -222,6 +222,45 @@ starting point.</p>
 </ul>
 <p>If your preprocessing and syntax assumptions are built around Clang, use <code>Config::with_clang()</code> or
 <code>Flavor::ClangC11</code>.</p>
+<h2 id="c23-keyword-support"><a class="header" href="#c23-keyword-support">C23 keyword support</a></h2>
+<p>PAC accepts the following C23 keywords in all flavors, because modern compilers (GCC 15+) emit them
+in preprocessed output by default:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>C23 keyword</th><th>C11 equivalent</th><th>Notes</th></tr>
+</thead>
+<tbody>
+<tr><td><code>bool</code></td><td><code>_Bool</code></td><td>type specifier</td></tr>
+<tr><td><code>true</code></td><td><code>1</code></td><td>parsed as integer constant</td></tr>
+<tr><td><code>false</code></td><td><code>0</code></td><td>parsed as integer constant</td></tr>
+<tr><td><code>nullptr</code></td><td><code>0</code></td><td>parsed as integer constant</td></tr>
+<tr><td><code>static_assert</code></td><td><code>_Static_assert</code></td><td>declaration</td></tr>
+<tr><td><code>alignas</code></td><td><code>_Alignas</code></td><td>alignment specifier</td></tr>
+<tr><td><code>alignof</code></td><td><code>_Alignof</code></td><td>expression</td></tr>
+<tr><td><code>thread_local</code></td><td><code>_Thread_local</code></td><td>storage class</td></tr>
+<tr><td><code>constexpr</code></td><td>(none)</td><td>storage class specifier</td></tr>
+<tr><td><code>typeof</code></td><td><code>__typeof__</code></td><td>type specifier (was GNU-only)</td></tr>
+<tr><td><code>_BitInt(N)</code></td><td>(none)</td><td>type specifier with width</td></tr>
+<tr><td><code>noreturn</code></td><td><code>_Noreturn</code></td><td>function specifier</td></tr>
+<tr><td><code>complex</code></td><td><code>_Complex</code></td><td>type specifier</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="gcc-extension-types"><a class="header" href="#gcc-extension-types">GCC extension types</a></h2>
+<p>PAC recognizes these GCC extension types in GNU mode:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Type</th><th>AST variant</th><th>Notes</th></tr>
+</thead>
+<tbody>
+<tr><td><code>__int128</code></td><td><code>TypeSpecifier::Int128</code></td><td>non-unique, combinable with <code>signed</code>/<code>unsigned</code></td></tr>
+<tr><td><code>__float128</code></td><td><code>TypeSpecifier::Float128</code></td><td>unique type specifier</td></tr>
+<tr><td><code>__builtin_va_list</code></td><td>typedef</td><td>handled as built-in typedef name</td></tr>
+</tbody>
+</table>
+</div>
 <h2 id="standard-mode-guidance"><a class="header" href="#standard-mode-guidance">Standard-mode guidance</a></h2>
 <p>Use <code>StdC11</code> when:</p>
 <ul>

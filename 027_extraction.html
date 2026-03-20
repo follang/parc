@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Parser Boundaries - PAC Reference</title>
+        <title>Extraction - PAC Reference</title>
 
 
         <!-- Custom HTML head -->
@@ -174,59 +174,104 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="parser-boundaries"><a class="header" href="#parser-boundaries">Parser Boundaries</a></h1>
-<p>This chapter explains where PAC starts and where it intentionally stops.</p>
-<h2 id="pac-owns-syntax-parsing"><a class="header" href="#pac-owns-syntax-parsing">PAC owns syntax parsing</a></h2>
-<p>PAC is responsible for:</p>
+                        <h1 id="extraction"><a class="header" href="#extraction">Extraction</a></h1>
+<p>The <code>pac::extract</code> module converts a parsed C AST into the normalized
+<code>SourcePackage</code> IR. It handles all declaration families.</p>
+<h2 id="quick-start"><a class="header" href="#quick-start">Quick Start</a></h2>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use pac::extract;
+
+let source = r#"
+    typedef unsigned long size_t;
+    void *malloc(size_t size);
+    struct point { int x; int y; };
+"#;
+
+let pkg = extract::extract_from_source(source).unwrap();
+assert_eq!(pkg.function_count(), 1);
+assert_eq!(pkg.record_count(), 1);
+assert_eq!(pkg.type_alias_count(), 1);
+<span class="boring">}</span></code></pre>
+<h2 id="api-functions"><a class="header" href="#api-functions">API Functions</a></h2>
+<h3 id="extract_from_source"><a class="header" href="#extract_from_source"><code>extract_from_source</code></a></h3>
+<p>Parse and extract in one step using GNU C11 flavor:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let pkg = pac::extract::extract_from_source("int foo(void);").unwrap();
+<span class="boring">}</span></code></pre>
+<h3 id="parse_and_extract"><a class="header" href="#parse_and_extract"><code>parse_and_extract</code></a></h3>
+<p>Parse and extract with a specific flavor:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let pkg = pac::extract::parse_and_extract(
+    "int foo(void);",
+    pac::driver::Flavor::StdC11,
+).unwrap();
+<span class="boring">}</span></code></pre>
+<h3 id="extract_from_translation_unit"><a class="header" href="#extract_from_translation_unit"><code>extract_from_translation_unit</code></a></h3>
+<p>Extract from an already-parsed AST:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let unit = pac::parse::translation_unit("int foo(void);", pac::driver::Flavor::StdC11).unwrap();
+let pkg = pac::extract::extract_from_translation_unit(&amp;unit, Some("test.h".into()));
+<span class="boring">}</span></code></pre>
+<h3 id="parse_and_extract_resilient"><a class="header" href="#parse_and_extract_resilient"><code>parse_and_extract_resilient</code></a></h3>
+<p>Parse with error recovery and extract what’s possible:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let pkg = pac::extract::parse_and_extract_resilient(
+    "int valid;\n@@@bad@@@;\nint also_valid;",
+    pac::driver::Flavor::StdC11,
+);
+<span class="boring">}</span></code></pre>
+<h3 id="extract_file"><a class="header" href="#extract_file"><code>extract_file</code></a></h3>
+<p>Read a file from disk and extract:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let pkg = pac::extract::extract_file("path/to/header.h", pac::driver::Flavor::GnuC11).unwrap();
+assert!(pkg.source_path.is_some());
+<span class="boring">}</span></code></pre>
+<h2 id="what-gets-extracted"><a class="header" href="#what-gets-extracted">What Gets Extracted</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>C Declaration</th><th>Source Item</th></tr>
+</thead>
+<tbody>
+<tr><td><code>typedef int T;</code></td><td><code>SourceTypeAlias</code></td></tr>
+<tr><td><code>int foo(void);</code></td><td><code>SourceFunction</code></td></tr>
+<tr><td><code>int foo(void) { ... }</code></td><td><code>SourceFunction</code> (body ignored)</td></tr>
+<tr><td><code>struct S { int x; };</code></td><td><code>SourceRecord</code></td></tr>
+<tr><td><code>struct S;</code></td><td><code>SourceRecord</code> (opaque)</td></tr>
+<tr><td><code>union U { ... };</code></td><td><code>SourceRecord</code> (Union kind)</td></tr>
+<tr><td><code>enum E { A, B };</code></td><td><code>SourceEnum</code></td></tr>
+<tr><td><code>extern int x;</code></td><td><code>SourceVariable</code></td></tr>
+<tr><td><code>static int f() {}</code></td><td>Diagnostic (not bindable)</td></tr>
+<tr><td><code>_Static_assert(...)</code></td><td>Diagnostic</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="diagnostics"><a class="header" href="#diagnostics">Diagnostics</a></h2>
+<p>The extractor produces diagnostics for constructs it cannot fully represent:</p>
 <ul>
-<li>accepting supported C syntax</li>
-<li>building an AST</li>
-<li>carrying spans</li>
-<li>mapping parse positions back through preprocessor line markers</li>
+<li>Bitfield widths (partial representation)</li>
+<li>Inline/noreturn specifiers (ignored)</li>
+<li>Calling convention attributes (captured on function, other attributes warned)</li>
+<li>K&amp;R function declarations (unsupported)</li>
+<li>Block pointers (unsupported)</li>
+<li>Static functions (not bindable)</li>
 </ul>
-<p>That is the core boundary of the crate.</p>
-<h2 id="pac-does-not-own-full-compilation"><a class="header" href="#pac-does-not-own-full-compilation">PAC does not own full compilation</a></h2>
-<p>PAC does not attempt to be:</p>
-<ul>
-<li>a full preprocessor implementation</li>
-<li>a type checker</li>
-<li>a linker-aware analyzer</li>
-<li>a code generator</li>
-<li>a full semantic compiler frontend</li>
-</ul>
-<p>These are not accidental omissions. They are part of the intended scope boundary.</p>
-<h2 id="practical-layering"><a class="header" href="#practical-layering">Practical layering</a></h2>
-<p>A healthy toolchain boundary looks like this:</p>
-<ol>
-<li>a compiler or preprocessor produces acceptable input</li>
-<li>PAC parses it</li>
-<li>a later layer performs semantic analysis, policy checks, or code generation</li>
-</ol>
-<p>This keeps PAC focused on syntax and source structure.</p>
-<h2 id="why-this-matters-for-consumers"><a class="header" href="#why-this-matters-for-consumers">Why this matters for consumers</a></h2>
-<p>If a downstream tool needs:</p>
-<ul>
-<li>ABI guarantees</li>
-<li>linker truth</li>
-<li>semantic type equivalence</li>
-<li>macro inventories as data</li>
-</ul>
-<p>then PAC should be one component in the pipeline, not the whole pipeline.</p>
-<h2 id="why-this-matters-for-contributors"><a class="header" href="#why-this-matters-for-contributors">Why this matters for contributors</a></h2>
-<p>When deciding whether a new feature belongs in PAC, a useful question is:</p>
-<p>“Does this improve PAC’s syntax parsing and source-structure contract, or does it drag PAC into a
-later compiler stage?”</p>
-<p>If it is mostly a later-stage concern, it probably belongs outside PAC.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="180_support_tiers.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="026_source_ir.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="200_release_checklist.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="028_scanning.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -236,11 +281,11 @@ later compiler stage?”</p>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="180_support_tiers.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="026_source_ir.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="200_release_checklist.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="028_scanning.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>
