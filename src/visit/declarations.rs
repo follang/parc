@@ -65,6 +65,7 @@ pub fn visit_type_specifier<'ast, V: Visit<'ast> + ?Sized>(
         TypeSpecifier::TypedefName(ref t) => visitor.visit_identifier(&t.node, &t.span),
         TypeSpecifier::TypeOf(ref t) => visitor.visit_type_of(&t.node, &t.span),
         TypeSpecifier::TS18661Float(ref t) => visitor.visit_ts18661_float_type(t, span),
+        TypeSpecifier::BitInt(ref e) => visitor.visit_expression(&e.node, &e.span),
         _ => {}
     }
 }
