@@ -10,7 +10,12 @@ The repository is organized around a small public API surface and several intern
 | Path | Purpose |
 | --- | --- |
 | `src/lib.rs` | Public module exports |
+| `src/ir/` | Source-level IR (`SourcePackage`, `SourceType`, etc.) |
+| `src/extract/` | Declaration extraction from AST to IR |
+| `src/scan/` | Header scanning (preprocess + parse + extract) |
+| `src/intake/` | Preprocessed source intake |
 | `src/driver.rs` | File-based parsing via external preprocessing |
+| `src/preprocess/` | Built-in C preprocessor |
 | `src/parse.rs` | Direct fragment parsing API |
 | `src/ast/` | AST type definitions |
 | `src/visit/` | Recursive visitor functions and trait |
@@ -18,7 +23,7 @@ The repository is organized around a small public API surface and several intern
 | `src/loc.rs` | Preprocessor line-marker location mapping |
 | `src/span.rs` | `Span` and `Node<T>` wrappers |
 | `src/print.rs` | AST debug printer |
-| `src/tests/` | Test harnesses and integration-style parser tests |
+| `src/tests/` | Test harnesses and integration-style tests |
 
 ## AST and visitor organization
 
@@ -98,7 +103,12 @@ For example:
 
 These are normal consumer-facing modules:
 
+- `ir` (primary data contract)
+- `extract`
+- `scan`
+- `intake`
 - `driver`
+- `preprocess`
 - `parse`
 - `ast`
 - `visit`

@@ -1,42 +1,48 @@
 # PAC Reference
 
-PAC is a Rust library for parsing C source into an abstract syntax tree.
-It targets C11 and can optionally accept GNU and Clang extensions.
+PAC is a Rust library for C language frontend processing: preprocessing,
+parsing, and source-level semantic extraction. It targets C11 and can
+optionally accept GNU and Clang extensions.
 
-At a high level, PAC supports two workflows:
-
-1. Parse a real C file through a system preprocessor with [`pac::driver`].
-2. Parse already-preprocessed text or individual C fragments with [`pac::parse`].
+PAC is the frontend stage of the PARC pipeline. It produces a durable
+`SourcePackage` contract suitable for downstream consumption by linker
+and codegen stages.
 
 ## What PAC gives you
 
-- A typed AST under `pac::ast`
-- Source spans for parsed nodes under `pac::span`
-- File and line reconstruction for preprocessed input under `pac::loc`
-- A recursive visitor API under `pac::visit`
-- A tree-style debug printer under `pac::print`
+- **Preprocessing**: built-in C preprocessor with macro expansion, conditionals, and includes
+- **Parsing**: C11 parser producing a typed AST under `pac::ast`
+- **Extraction**: source-level declaration normalization into `pac::ir`
+- **Source IR**: a serializable `SourcePackage` with functions, records, enums, typedefs, variables, macros, diagnostics, and provenance
+- **Scanning**: end-to-end header scanning via `pac::scan`
+- Source spans under `pac::span`
+- File/line reconstruction under `pac::loc`
+- Recursive visitor API under `pac::visit`
+- Tree-style debug printer under `pac::print`
 
 ## Pipeline
 
-For file parsing, the normal flow is:
-
 ```text
-C source file
-  -> system preprocessor (gcc / clang)
+C source / headers
+  -> preprocessor (built-in or gcc/clang)
   -> PAC parser
-  -> TranslationUnit AST
+  -> extraction
+  -> SourcePackage (frontend contract)
+  -> downstream (LINC, GERC)
 ```
-
-If you already have preprocessed source, you can skip the external preprocessor and call
-`driver::parse_preprocessed` or the lower-level functions in `parse`.
 
 ## Public modules
 
 | Module | Purpose |
 | --- | --- |
+| `ir` | Source-level IR: `SourcePackage`, `SourceType`, `SourceItem`, etc. |
+| `extract` | Declaration extraction from AST to IR |
+| `scan` | Header scanning (preprocess + parse + extract) |
+| `intake` | Preprocessed source intake |
 | `driver` | High-level API for parsing files via a C preprocessor |
-| `parse` | Direct parsing of expressions, declarations, statements, and translation units |
-| `ast` | AST definitions for declarations, expressions, statements, and extensions |
+| `preprocess` | Built-in C preprocessor |
+| `parse` | Direct parsing of expressions, declarations, statements, translation units |
+| `ast` | AST definitions for declarations, expressions, statements, extensions |
 | `visit` | Recursive traversal API for AST consumers |
 | `span` | Byte offsets for parsed nodes |
 | `loc` | Mapping byte offsets back to source files and lines |
@@ -44,47 +50,17 @@ If you already have preprocessed source, you can skip the external preprocessor 
 
 ## Typical use cases
 
+- Extract function/struct/enum declarations from C headers
 - Build a linter or analysis tool for C code
-- Inspect declarations in headers after preprocessing
+- Scan headers and produce a serializable source package
 - Parse small fragments in tests
 - Prototype refactoring or code-search tools
-- Compare parser output across standard, GNU, and Clang flavors
-
-## Important mental model
-
-PAC is a parser, not a full compiler frontend. It gives you syntax and source structure.
-It does not do semantic analysis, type checking, macro expansion itself, or code generation.
-
-That distinction matters:
-
-- If your input still contains active preprocessor directives or macros, use `driver`.
-- If you want symbol resolution or type inference, you need to build that on top of the AST.
-- Node spans point into the parsed input text, which for `driver` means the preprocessed source.
 
 ## Where to start
 
-- Read [Getting Started](./010_getting_started.md) for the basic setup
-- Read [Common Workflows](./015_workflows.md) to choose the right entry point
-- Read [Driver API](./020_driver.md) or [Parser API](./030_parser.md) depending on your input
+- Read [Getting Started](./010_getting_started.md) for basic setup
+- Read [Source IR](./026_source_ir.md) for the data contract
+- Read [Extraction](./027_extraction.md) for turning source into IR
+- Read [Header Scanning](./028_scanning.md) for end-to-end workflows
+- Read [Driver API](./020_driver.md) or [Parser API](./030_parser.md) for parse-level access
 - Read [AST Model](./040_ast.md) before writing analysis code
-- Read [Visitor Pattern](./050_visitor.md) if you want to walk the tree
-
-## Recommended reading order
-
-The book is now organized in a few larger blocks:
-
-1. Core parsing usage
-2. Diagnostics, locations, and testing
-3. Consumer contract and workflow guidance
-4. Support boundaries and unsupported cases
-5. Contributor-oriented project layout and workflow
-
-If you are integrating PAC into another tool, focus first on:
-
-- [Common Workflows](./015_workflows.md)
-- [Driver API](./020_driver.md)
-- [Parser API](./030_parser.md)
-- [AST Model](./040_ast.md)
-- [Visitor Pattern](./050_visitor.md)
-- [API Contract](./100_api_contract.md)
-- [End-To-End Workflows](./110_end_to_end_workflows.md)
