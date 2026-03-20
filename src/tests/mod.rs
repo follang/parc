@@ -4,6 +4,7 @@ mod extraction_fixtures;
 mod full_apps;
 mod hostile_headers;
 mod parse_api;
+mod recovery;
 mod reftests;
 mod support;
 mod system_headers;
