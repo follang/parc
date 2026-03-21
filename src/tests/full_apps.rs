@@ -74,7 +74,11 @@ impl FullAppCase {
                     "core" | "std" => AppFlavor::Core,
                     "gnu" => AppFlavor::Gnu,
                     "clang" => AppFlavor::Clang,
-                    _ => panic!("{}: unsupported flavor `{}`", manifest_path.display(), value),
+                    _ => panic!(
+                        "{}: unsupported flavor `{}`",
+                        manifest_path.display(),
+                        value
+                    ),
                 };
             }
 
@@ -227,7 +231,10 @@ fn syntax_error_to_parse_error(error: driver::SyntaxError) -> parser::ParseError
 fn full_app_main() {
     let mut case_paths = Vec::new();
     collect_fixture_dirs(Path::new("test/full_apps"), &mut case_paths);
-    assert!(!case_paths.is_empty(), "expected at least one full app fixture");
+    assert!(
+        !case_paths.is_empty(),
+        "expected at least one full app fixture"
+    );
     let path_filter = env::var("FULL_APP_FILTER").ok();
     let tag_filter = env::var("FULL_APP_TAG").ok();
 
@@ -247,7 +254,11 @@ fn full_app_main() {
         .collect::<Vec<_>>();
 
     if !failed.is_empty() {
-        panic!("{} full app cases failed:\n{}", failed.len(), failed.join("\n"));
+        panic!(
+            "{} full app cases failed:\n{}",
+            failed.len(),
+            failed.join("\n")
+        );
     }
 }
 
@@ -312,9 +323,8 @@ fn full_app_manifest_supports_preprocessed_mode() {
 
 #[test]
 fn full_app_manifest_supports_system_include_opt_in() {
-    let case =
-        FullAppCase::from_dir(PathBuf::from("test/full_apps/external/zlib/zpipe_example"))
-            .expect("loading external zlib example fixture");
+    let case = FullAppCase::from_dir(PathBuf::from("test/full_apps/external/zlib/zpipe_example"))
+        .expect("loading external zlib example fixture");
 
     assert!(matches!(case.mode, AppMode::Driver));
     assert!(case.allow_system_includes);
@@ -323,9 +333,8 @@ fn full_app_manifest_supports_system_include_opt_in() {
 
 #[test]
 fn full_app_example_fixtures_can_be_filtered_by_example_tag() {
-    let case =
-        FullAppCase::from_dir(PathBuf::from("test/full_apps/external/zlib/zpipe_example"))
-            .expect("loading external zlib example fixture");
+    let case = FullAppCase::from_dir(PathBuf::from("test/full_apps/external/zlib/zpipe_example"))
+        .expect("loading external zlib example fixture");
 
     assert!(case.matches_filters(None, Some("example")));
     assert!(!case.matches_filters(None, Some("header")));

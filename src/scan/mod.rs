@@ -12,7 +12,9 @@ use std::io;
 use std::process::Command;
 
 use crate::extract::Extractor;
-use crate::ir::{DiagnosticKind, SourceDiagnostic, SourceDefine, SourceInputs, SourcePackage, SourceTarget};
+use crate::ir::{
+    DiagnosticKind, SourceDefine, SourceDiagnostic, SourceInputs, SourcePackage, SourceTarget,
+};
 
 /// Result of a header scan operation.
 #[derive(Debug)]
@@ -116,13 +118,10 @@ fn env_include_paths() -> Vec<std::path::PathBuf> {
 }
 
 fn preprocess_external(config: &ScanConfig) -> Result<(String, String), ScanError> {
-    let compiler = config
-        .compiler
-        .as_deref()
-        .unwrap_or(match config.flavor {
-            crate::driver::Flavor::ClangC11 => "clang",
-            _ => "gcc",
-        });
+    let compiler = config.compiler.as_deref().unwrap_or(match config.flavor {
+        crate::driver::Flavor::ClangC11 => "clang",
+        _ => "gcc",
+    });
 
     let mut cmd = Command::new(compiler);
     cmd.arg("-E");
@@ -683,7 +682,10 @@ int64_t get_big(void);
 
             // Both should resolve to the same primitive types
             assert_eq!(get_id.return_type, gcc_id.return_type, "int32_t mismatch");
-            assert_eq!(get_byte.return_type, gcc_byte.return_type, "uint8_t mismatch");
+            assert_eq!(
+                get_byte.return_type, gcc_byte.return_type,
+                "uint8_t mismatch"
+            );
             assert_eq!(get_big.return_type, gcc_big.return_type, "int64_t mismatch");
         }
 

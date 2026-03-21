@@ -138,7 +138,10 @@ mod tests {
     fn pointer_construction() {
         let p = SourceType::ptr(SourceType::Int);
         match &p {
-            SourceType::Pointer { pointee, qualifiers } => {
+            SourceType::Pointer {
+                pointee,
+                qualifiers,
+            } => {
                 assert_eq!(**pointee, SourceType::Int);
                 assert_eq!(*qualifiers, TypeQualifiers::default());
             }
@@ -150,7 +153,10 @@ mod tests {
     fn const_pointer_construction() {
         let p = SourceType::const_ptr(SourceType::Char);
         match &p {
-            SourceType::Pointer { pointee, qualifiers } => {
+            SourceType::Pointer {
+                pointee,
+                qualifiers,
+            } => {
                 assert_eq!(**pointee, SourceType::Char);
                 assert!(qualifiers.is_const);
             }

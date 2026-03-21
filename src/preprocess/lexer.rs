@@ -125,9 +125,7 @@ impl<'a> Lexer<'a> {
             }
             b'"' => self.lex_string_literal(start),
             b'\'' => self.lex_char_literal(start),
-            b'L' | b'u' | b'U'
-                if self.peek(1) == Some(b'"') || self.peek(1) == Some(b'\'') =>
-            {
+            b'L' | b'u' | b'U' if self.peek(1) == Some(b'"') || self.peek(1) == Some(b'\'') => {
                 // Wide/unicode string/char prefixes
                 if self.peek(1) == Some(b'"') {
                     self.pos += 1;
@@ -143,16 +141,18 @@ impl<'a> Lexer<'a> {
             }
             b'a'..=b'z' | b'A'..=b'Z' | b'_' => self.lex_identifier(start),
             b'0'..=b'9' => self.lex_number(start),
-            b'.' if self.peek(1).map_or(false, |c| c.is_ascii_digit()) => {
-                self.lex_number(start)
-            }
+            b'.' if self.peek(1).map_or(false, |c| c.is_ascii_digit()) => self.lex_number(start),
             _ => {
                 self.at_line_start = false;
                 // Multi-character operators
                 let next = self.peek(1);
                 let len = match (b, next) {
                     (b'<', Some(b'<')) | (b'>', Some(b'>')) => {
-                        if self.peek(2) == Some(b'=') { 3 } else { 2 }
+                        if self.peek(2) == Some(b'=') {
+                            3
+                        } else {
+                            2
+                        }
                     }
                     (b'=', Some(b'='))
                     | (b'!', Some(b'='))
@@ -301,10 +301,7 @@ impl<'a> Lexer<'a> {
                 }
                 b'+' | b'-'
                     if self.pos > start
-                        && matches!(
-                            self.input[self.pos - 1],
-                            b'e' | b'E' | b'p' | b'P'
-                        ) =>
+                        && matches!(self.input[self.pos - 1], b'e' | b'E' | b'p' | b'P') =>
                 {
                     self.pos += 1;
                 }
@@ -429,11 +426,11 @@ mod tests {
             kinds,
             vec![
                 &TokenKind::Hash,
-                &TokenKind::Ident,      // define
+                &TokenKind::Ident, // define
                 &TokenKind::Whitespace,
-                &TokenKind::Ident,      // FOO
+                &TokenKind::Ident, // FOO
                 &TokenKind::Whitespace,
-                &TokenKind::Number,     // 42
+                &TokenKind::Number, // 42
                 &TokenKind::Newline,
                 &TokenKind::Eof,
             ]
@@ -449,6 +446,9 @@ mod tests {
             .filter(|t| t.kind == TokenKind::Punct)
             .map(|t| t.text.as_str())
             .collect();
-        assert_eq!(ops, vec!["==", "!=", "<=", ">=", "<<", ">>", "&&", "||", "++", "--", "->"]);
+        assert_eq!(
+            ops,
+            vec!["==", "!=", "<=", ">=", "<<", ">>", "&&", "||", "++", "--", "->"]
+        );
     }
 }

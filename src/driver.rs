@@ -213,7 +213,7 @@ pub fn parse_builtin<P: AsRef<Path>>(
     include_paths: &[&Path],
 ) -> Result<Parse, Error> {
     use crate::preprocess::{
-        define_target_macros, IncludeResolver, Processor, Target, tokens_to_text,
+        define_target_macros, tokens_to_text, IncludeResolver, Processor, Target,
     };
 
     let target = Target::host();

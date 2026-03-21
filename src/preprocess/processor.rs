@@ -1,4 +1,4 @@
-use super::directive::{Directive, parse_directive};
+use super::directive::{parse_directive, Directive};
 use super::expr::eval_condition;
 use super::macros::{MacroDef, MacroTable};
 use super::token::{Token, TokenKind};
@@ -92,11 +92,7 @@ impl Processor {
         &mut self.macros
     }
 
-    fn process_inner<F>(
-        &mut self,
-        tokens: &[Token],
-        include_handler: &mut F,
-    ) -> ProcessorOutput
+    fn process_inner<F>(&mut self, tokens: &[Token], include_handler: &mut F) -> ProcessorOutput
     where
         F: FnMut(&str, bool, &mut MacroTable) -> Option<Vec<Token>>,
     {
@@ -133,7 +129,9 @@ impl Processor {
                 let directive = parse_directive(&dir_tokens);
 
                 match directive {
-                    Directive::If { tokens: expr_tokens } => {
+                    Directive::If {
+                        tokens: expr_tokens,
+                    } => {
                         let parent_active = active;
                         let branch_active = if parent_active {
                             eval_condition(&expr_tokens, &self.macros)
@@ -172,13 +170,14 @@ impl Processor {
                             parent_active,
                         });
                     }
-                    Directive::Elif { tokens: expr_tokens } => {
+                    Directive::Elif {
+                        tokens: expr_tokens,
+                    } => {
                         if let Some(state) = cond_stack.last_mut() {
                             if state.any_taken || !state.parent_active {
                                 state.active = false;
                             } else {
-                                let branch_active =
-                                    eval_condition(&expr_tokens, &self.macros);
+                                let branch_active = eval_condition(&expr_tokens, &self.macros);
                                 state.active = branch_active;
                                 if branch_active {
                                     state.any_taken = true;
@@ -238,8 +237,7 @@ impl Processor {
                     }
                     Directive::Pragma { ref tokens } => {
                         // Check for #pragma once
-                        let first_nonws = tokens.iter()
-                            .find(|t| t.kind != TokenKind::Whitespace);
+                        let first_nonws = tokens.iter().find(|t| t.kind != TokenKind::Whitespace);
                         if first_nonws.map_or(false, |t| t.text == "once") {
                             output.pragma_once = true;
                         }
@@ -525,13 +523,16 @@ int x;
 
     #[test]
     fn predefined_macros() {
-        let result = pp_with_defs(&[("LINUX", "1")], "\
+        let result = pp_with_defs(
+            &[("LINUX", "1")],
+            "\
 #ifdef LINUX
 int linux;
 #else
 int other;
 #endif
-");
+",
+        );
         assert_eq!(result, "int linux;");
     }
 

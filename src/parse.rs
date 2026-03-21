@@ -1,6 +1,4 @@
-use crate::ast::{
-    Constant, Declaration, Expression, Statement, TranslationUnit,
-};
+use crate::ast::{Constant, Declaration, Expression, Statement, TranslationUnit};
 use crate::driver::Flavor;
 use crate::env::Env;
 use crate::parser;

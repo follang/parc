@@ -178,15 +178,12 @@ fn contract_unsupported_items_preserved() {
     let pkg = extract::extract_from_source(src).unwrap();
     // Static function should produce a diagnostic, not silently drop
     assert!(pkg.has_diagnostics());
-    assert!(pkg
-        .diagnostics
-        .iter()
-        .any(|d| d.message.contains("static")));
+    assert!(pkg.diagnostics.iter().any(|d| d.message.contains("static")));
 }
 
 #[test]
 fn contract_scan_end_to_end() {
-    use crate::scan::{ScanConfig, scan_headers};
+    use crate::scan::{scan_headers, ScanConfig};
 
     let dir = std::env::temp_dir().join("pac_test_contract");
     let _ = std::fs::create_dir_all(&dir);

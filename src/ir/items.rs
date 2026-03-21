@@ -331,14 +331,8 @@ mod tests {
             SourceItem::Function(sample_function()).name(),
             Some("malloc")
         );
-        assert_eq!(
-            SourceItem::Record(sample_record()).name(),
-            Some("point")
-        );
-        assert_eq!(
-            SourceItem::Enum(sample_enum()).name(),
-            Some("color")
-        );
+        assert_eq!(SourceItem::Record(sample_record()).name(), Some("point"));
+        assert_eq!(SourceItem::Enum(sample_enum()).name(), Some("color"));
 
         let anon_record = SourceItem::Record(SourceRecord {
             kind: RecordKind::Struct,

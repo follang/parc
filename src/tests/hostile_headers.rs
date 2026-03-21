@@ -33,7 +33,7 @@ fn hostile_deep_pointer_chain() {
 #[test]
 fn hostile_anonymous_struct_typedef() {
     let pkg = extract_ok("typedef struct { int x; int y; } point_t;");
-    let alias = pkg.find_type_alias("point_t").unwrap();
+    let _alias = pkg.find_type_alias("point_t").unwrap();
     // The anonymous struct should still be extracted
     let records: Vec<_> = pkg.records().collect();
     assert_eq!(records.len(), 1);
@@ -46,7 +46,7 @@ fn hostile_anonymous_struct_typedef() {
 #[test]
 fn hostile_anonymous_enum_typedef() {
     let pkg = extract_ok("typedef enum { A, B, C } letters_t;");
-    let alias = pkg.find_type_alias("letters_t").unwrap();
+    let _alias = pkg.find_type_alias("letters_t").unwrap();
     let enums: Vec<_> = pkg.enums().collect();
     assert_eq!(enums.len(), 1);
     assert!(enums[0].name.is_none());
@@ -157,7 +157,8 @@ fn hostile_multiple_extern_variables() {
 
 #[test]
 fn hostile_all_bitfields() {
-    let pkg = extract_ok("struct bits { unsigned a:1; unsigned b:2; unsigned c:3; unsigned d:4; };");
+    let pkg =
+        extract_ok("struct bits { unsigned a:1; unsigned b:2; unsigned c:3; unsigned d:4; };");
     let rec = pkg.records().next().unwrap();
     let fields = rec.fields.as_ref().unwrap();
     assert_eq!(fields.len(), 4);
@@ -271,7 +272,10 @@ fn hostile_volatile_const_pointer() {
     // Current extractor splits const to pointee-const and volatile to outer Qualified
     match &f.return_type {
         SourceType::Pointer { .. } | SourceType::Qualified { .. } => {} // acceptable
-        other => panic!("expected Pointer or Qualified wrapping Pointer, got {:?}", other),
+        other => panic!(
+            "expected Pointer or Qualified wrapping Pointer, got {:?}",
+            other
+        ),
     }
 }
 

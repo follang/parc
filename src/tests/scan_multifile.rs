@@ -89,11 +89,7 @@ fn scan_multiple_entry_headers() {
 fn scan_cross_file_struct_ref() {
     let dir = temp_dir("cross_struct");
 
-    std::fs::write(
-        dir.join("types.h"),
-        "struct point { int x; int y; };\n",
-    )
-    .unwrap();
+    std::fs::write(dir.join("types.h"), "struct point { int x; int y; };\n").unwrap();
     std::fs::write(
         dir.join("api.h"),
         "#include \"types.h\"\nvoid draw(struct point *p);\nstruct point origin(void);\n",
@@ -192,11 +188,7 @@ typedef int status_t;
     )
     .unwrap();
 
-    std::fs::write(
-        dir.join("main.h"),
-        "#include \"a.h\"\n#include \"b.h\"\n",
-    )
-    .unwrap();
+    std::fs::write(dir.join("main.h"), "#include \"a.h\"\n#include \"b.h\"\n").unwrap();
 
     let config = ScanConfig::new()
         .entry_header(dir.join("main.h"))

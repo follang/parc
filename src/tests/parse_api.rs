@@ -27,8 +27,11 @@ fn parse_api_statement_works() {
 
 #[test]
 fn parse_api_translation_unit_works() {
-    parse::translation_unit("typedef int counter_t;\nint main(void) { return 0; }\n", Flavor::StdC11)
-        .expect("parsing translation unit");
+    parse::translation_unit(
+        "typedef int counter_t;\nint main(void) { return 0; }\n",
+        Flavor::StdC11,
+    )
+    .expect("parsing translation unit");
 }
 
 #[test]

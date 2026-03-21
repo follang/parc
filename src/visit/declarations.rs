@@ -22,11 +22,19 @@ pub fn visit_declaration_specifier<'ast, V: Visit<'ast> + ?Sized>(
     _span: &'ast Span,
 ) {
     match *declaration_specifier {
-        DeclarationSpecifier::StorageClass(ref s) => visitor.visit_storage_class_specifier(&s.node, &s.span),
-        DeclarationSpecifier::TypeSpecifier(ref t) => visitor.visit_type_specifier(&t.node, &t.span),
-        DeclarationSpecifier::TypeQualifier(ref t) => visitor.visit_type_qualifier(&t.node, &t.span),
+        DeclarationSpecifier::StorageClass(ref s) => {
+            visitor.visit_storage_class_specifier(&s.node, &s.span)
+        }
+        DeclarationSpecifier::TypeSpecifier(ref t) => {
+            visitor.visit_type_specifier(&t.node, &t.span)
+        }
+        DeclarationSpecifier::TypeQualifier(ref t) => {
+            visitor.visit_type_qualifier(&t.node, &t.span)
+        }
         DeclarationSpecifier::Function(ref f) => visitor.visit_function_specifier(&f.node, &f.span),
-        DeclarationSpecifier::Alignment(ref a) => visitor.visit_alignment_specifier(&a.node, &a.span),
+        DeclarationSpecifier::Alignment(ref a) => {
+            visitor.visit_alignment_specifier(&a.node, &a.span)
+        }
         DeclarationSpecifier::Extension(ref e) => {
             for extension in e {
                 visitor.visit_extension(&extension.node, &extension.span);
@@ -40,7 +48,10 @@ pub fn visit_init_declarator<'ast, V: Visit<'ast> + ?Sized>(
     init_declarator: &'ast InitDeclarator,
     _span: &'ast Span,
 ) {
-    visitor.visit_declarator(&init_declarator.declarator.node, &init_declarator.declarator.span);
+    visitor.visit_declarator(
+        &init_declarator.declarator.node,
+        &init_declarator.declarator.span,
+    );
     if let Some(ref initializer) = init_declarator.initializer {
         visitor.visit_initializer(&initializer.node, &initializer.span);
     }
@@ -373,7 +384,10 @@ pub fn visit_initializer_list_item<'ast, V: Visit<'ast> + ?Sized>(
     for designation in &initializer_list_item.designation {
         visitor.visit_designator(&designation.node, &designation.span);
     }
-    visitor.visit_initializer(&initializer_list_item.initializer.node, &initializer_list_item.initializer.span);
+    visitor.visit_initializer(
+        &initializer_list_item.initializer.node,
+        &initializer_list_item.initializer.span,
+    );
 }
 
 pub fn visit_designator<'ast, V: Visit<'ast> + ?Sized>(
@@ -402,7 +416,10 @@ pub fn visit_static_assert<'ast, V: Visit<'ast> + ?Sized>(
     static_assert: &'ast StaticAssert,
     _span: &'ast Span,
 ) {
-    visitor.visit_expression(&static_assert.expression.node, &static_assert.expression.span);
+    visitor.visit_expression(
+        &static_assert.expression.node,
+        &static_assert.expression.span,
+    );
     visitor.visit_string_literal(&static_assert.message.node, &static_assert.message.span);
 }
 
@@ -423,7 +440,9 @@ pub fn visit_external_declaration<'ast, V: Visit<'ast> + ?Sized>(
     match *external_declaration {
         ExternalDeclaration::Declaration(ref d) => visitor.visit_declaration(&d.node, &d.span),
         ExternalDeclaration::StaticAssert(ref s) => visitor.visit_static_assert(&s.node, &s.span),
-        ExternalDeclaration::FunctionDefinition(ref f) => visitor.visit_function_definition(&f.node, &f.span),
+        ExternalDeclaration::FunctionDefinition(ref f) => {
+            visitor.visit_function_definition(&f.node, &f.span)
+        }
     }
 }
 
@@ -435,9 +454,15 @@ pub fn visit_function_definition<'ast, V: Visit<'ast> + ?Sized>(
     for specifier in &function_definition.specifiers {
         visitor.visit_declaration_specifier(&specifier.node, &specifier.span);
     }
-    visitor.visit_declarator(&function_definition.declarator.node, &function_definition.declarator.span);
+    visitor.visit_declarator(
+        &function_definition.declarator.node,
+        &function_definition.declarator.span,
+    );
     for declaration in &function_definition.declarations {
         visitor.visit_declaration(&declaration.node, &declaration.span);
     }
-    visitor.visit_statement(&function_definition.statement.node, &function_definition.statement.span);
+    visitor.visit_statement(
+        &function_definition.statement.node,
+        &function_definition.statement.span,
+    );
 }

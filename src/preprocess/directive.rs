@@ -140,8 +140,10 @@ fn parse_define(tokens: &[Token]) -> Directive {
                 i += 1;
                 break;
             }
-            if tokens[i].text == "." && i + 2 < tokens.len()
-                && tokens[i + 1].text == "." && tokens[i + 2].text == "."
+            if tokens[i].text == "."
+                && i + 2 < tokens.len()
+                && tokens[i + 1].text == "."
+                && tokens[i + 2].text == "."
             {
                 variadic = true;
                 i += 3;

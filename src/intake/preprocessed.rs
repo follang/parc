@@ -160,8 +160,7 @@ mod tests {
 
     #[test]
     fn with_flavor() {
-        let input =
-            PreprocessedInput::from_string("typedef int x;").with_flavor(Flavor::StdC11);
+        let input = PreprocessedInput::from_string("typedef int x;").with_flavor(Flavor::StdC11);
         let pkg = input.extract();
         assert_eq!(pkg.items.len(), 1);
     }

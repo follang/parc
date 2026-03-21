@@ -31,10 +31,7 @@ impl Extractor {
     }
 
     /// Walk all external declarations and produce items + diagnostics.
-    pub fn extract(
-        mut self,
-        unit: &TranslationUnit,
-    ) -> (Vec<SourceItem>, Vec<SourceDiagnostic>) {
+    pub fn extract(mut self, unit: &TranslationUnit) -> (Vec<SourceItem>, Vec<SourceDiagnostic>) {
         for ext_decl in &unit.0 {
             self.extract_external_declaration(ext_decl);
         }
@@ -127,8 +124,8 @@ impl Extractor {
             return;
         }
 
-        let calling_convention =
-            detect_calling_convention(&fdef.declarator.node.extensions).unwrap_or(CallingConvention::C);
+        let calling_convention = detect_calling_convention(&fdef.declarator.node.extensions)
+            .unwrap_or(CallingConvention::C);
         self.emit_extension_diagnostics(&fdef.declarator.node.extensions, &name, offset);
         self.emit_specifier_diagnostics(&fdef.specifiers, &name, offset);
         self.emit_derived_diagnostics(&fdef.declarator.node, &name, offset);
@@ -374,7 +371,11 @@ impl Extractor {
             .iter()
             .map(|e| SourceEnumVariant {
                 name: e.node.identifier.node.name.clone(),
-                value: e.node.expression.as_ref().and_then(|expr| eval_const_expr(&expr.node)),
+                value: e
+                    .node
+                    .expression
+                    .as_ref()
+                    .and_then(|expr| eval_const_expr(&expr.node)),
             })
             .collect();
 
@@ -628,12 +629,14 @@ fn extract_parameters(params: &[Node<ParameterDeclaration>]) -> Vec<SourceParame
 }
 
 fn detect_calling_convention(extensions: &[Node<Extension>]) -> Option<CallingConvention> {
-    extensions.iter().find_map(|extension| match &extension.node {
-        Extension::Attribute(attribute) => {
-            calling_convention_from_attr_name(&attribute.name.node)
-        }
-        _ => None,
-    })
+    extensions
+        .iter()
+        .find_map(|extension| match &extension.node {
+            Extension::Attribute(attribute) => {
+                calling_convention_from_attr_name(&attribute.name.node)
+            }
+            _ => None,
+        })
 }
 
 fn calling_convention_from_attr_name(name: &str) -> Option<CallingConvention> {
@@ -652,8 +655,13 @@ fn calling_convention_from_attr_name(name: &str) -> Option<CallingConvention> {
 
 /// Parse C source and extract a `SourcePackage`.
 pub fn extract_from_source(source: &str) -> Result<SourcePackage, String> {
-    let unit = crate::parse::translation_unit(source, crate::driver::Flavor::GnuC11)
-        .map_err(|e| format!("parse error at line {}:{}: {:?}", e.line, e.column, e.expected))?;
+    let unit =
+        crate::parse::translation_unit(source, crate::driver::Flavor::GnuC11).map_err(|e| {
+            format!(
+                "parse error at line {}:{}: {:?}",
+                e.line, e.column, e.expected
+            )
+        })?;
 
     let extractor = Extractor::new();
     let (items, diagnostics) = extractor.extract(&unit);
@@ -686,8 +694,12 @@ pub fn parse_and_extract(
     source: &str,
     flavor: crate::driver::Flavor,
 ) -> Result<SourcePackage, String> {
-    let unit = crate::parse::translation_unit(source, flavor)
-        .map_err(|e| format!("parse error at line {}:{}: {:?}", e.line, e.column, e.expected))?;
+    let unit = crate::parse::translation_unit(source, flavor).map_err(|e| {
+        format!(
+            "parse error at line {}:{}: {:?}",
+            e.line, e.column, e.expected
+        )
+    })?;
 
     let extractor = Extractor::new();
     let (items, diagnostics) = extractor.extract(&unit);
@@ -700,10 +712,7 @@ pub fn parse_and_extract(
 }
 
 /// Parse with resilient recovery and extract, returning diagnostics for parse errors.
-pub fn parse_and_extract_resilient(
-    source: &str,
-    flavor: crate::driver::Flavor,
-) -> SourcePackage {
+pub fn parse_and_extract_resilient(source: &str, flavor: crate::driver::Flavor) -> SourcePackage {
     let unit = crate::parse::translation_unit_resilient(source, flavor);
     let extractor = Extractor::new();
     let (items, diagnostics) = extractor.extract(&unit);
@@ -786,10 +795,7 @@ mod tests {
                 assert!(!f.variadic);
                 assert_eq!(f.parameters.len(), 1);
                 assert_eq!(f.parameters[0].name.as_deref(), Some("s"));
-                assert_eq!(
-                    f.parameters[0].ty,
-                    SourceType::const_ptr(SourceType::Char)
-                );
+                assert_eq!(f.parameters[0].ty, SourceType::const_ptr(SourceType::Char));
             }
             other => panic!("expected Function, got {:?}", other),
         }
@@ -872,7 +878,10 @@ mod tests {
         let fields = record.fields.as_ref().unwrap();
         assert_eq!(fields[0].bit_width, Some(3));
         assert_eq!(fields[1].bit_width, Some(5));
-        assert!(pkg.diagnostics.iter().any(|d| d.message.contains("bitfield")));
+        assert!(pkg
+            .diagnostics
+            .iter()
+            .any(|d| d.message.contains("bitfield")));
     }
 
     #[test]
@@ -989,7 +998,10 @@ mod tests {
         let funcs: Vec<_> = pkg.functions().collect();
         assert!(funcs.is_empty());
         assert_eq!(pkg.diagnostics.len(), 1);
-        assert_eq!(pkg.diagnostics[0].kind, DiagnosticKind::DeclarationUnsupported);
+        assert_eq!(
+            pkg.diagnostics[0].kind,
+            DiagnosticKind::DeclarationUnsupported
+        );
     }
 
     #[test]
@@ -1123,11 +1135,8 @@ mod tests {
 
     #[test]
     fn extract_from_translation_unit_works() {
-        let unit = crate::parse::translation_unit(
-            "int foo(void);",
-            crate::driver::Flavor::StdC11,
-        )
-        .unwrap();
+        let unit = crate::parse::translation_unit("int foo(void);", crate::driver::Flavor::StdC11)
+            .unwrap();
         let pkg = super::extract_from_translation_unit(&unit, Some("test.h".into()));
         assert_eq!(pkg.source_path.as_deref(), Some("test.h"));
         assert_eq!(pkg.functions().count(), 1);
@@ -1186,7 +1195,10 @@ mod tests {
         let pkg = super::extract_file(&path, crate::driver::Flavor::GnuC11).unwrap();
         assert_eq!(pkg.function_count(), 1);
         assert_eq!(pkg.record_count(), 1);
-        assert_eq!(pkg.source_path.as_deref(), Some(path.display().to_string().as_str()));
+        assert_eq!(
+            pkg.source_path.as_deref(),
+            Some(path.display().to_string().as_str())
+        );
 
         let _ = std::fs::remove_dir_all(&dir);
     }

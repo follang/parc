@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 
 use super::lexer::Lexer;
 use super::macros::MacroTable;
-use super::processor::{Processor, tokens_to_text};
+use super::processor::{tokens_to_text, Processor};
 use super::token::{Token, TokenKind};
 
 /// Include resolver: handles `#include` directives by searching paths
@@ -101,11 +101,7 @@ impl IncludeResolver {
     }
 
     /// Preprocess a source file, resolving all includes recursively.
-    pub fn preprocess_file(
-        &mut self,
-        path: &Path,
-        processor: &mut Processor,
-    ) -> PreprocessResult {
+    pub fn preprocess_file(&mut self, path: &Path, processor: &mut Processor) -> PreprocessResult {
         let canonical = match std::fs::canonicalize(path) {
             Ok(p) => p,
             Err(e) => {
@@ -193,7 +189,9 @@ impl IncludeResolver {
 
         // Try disk resolution first
         if let Some(resolved) = self.resolve(path, system) {
-            if let Some(tokens) = self.handle_include_file(&resolved, path, macros, errors, warnings) {
+            if let Some(tokens) =
+                self.handle_include_file(&resolved, path, macros, errors, warnings)
+            {
                 return Some(tokens);
             }
         }
@@ -318,8 +316,10 @@ impl IncludeResolver {
         // Skip leading whitespace/newlines/comments
         while i < tokens.len() {
             match tokens[i].kind {
-                TokenKind::Whitespace | TokenKind::Newline
-                | TokenKind::LineComment | TokenKind::BlockComment => i += 1,
+                TokenKind::Whitespace
+                | TokenKind::Newline
+                | TokenKind::LineComment
+                | TokenKind::BlockComment => i += 1,
                 _ => break,
             }
         }
@@ -330,7 +330,8 @@ impl IncludeResolver {
             while i < tokens.len() && tokens[i].kind == TokenKind::Whitespace {
                 i += 1;
             }
-            if i < tokens.len() && tokens[i].kind == TokenKind::Ident && tokens[i].text == "ifndef" {
+            if i < tokens.len() && tokens[i].kind == TokenKind::Ident && tokens[i].text == "ifndef"
+            {
                 i += 1;
                 while i < tokens.len() && tokens[i].kind == TokenKind::Whitespace {
                     i += 1;
@@ -341,8 +342,10 @@ impl IncludeResolver {
                     i += 1;
                     while i < tokens.len() {
                         match tokens[i].kind {
-                            TokenKind::Whitespace | TokenKind::Newline
-                            | TokenKind::LineComment | TokenKind::BlockComment => i += 1,
+                            TokenKind::Whitespace
+                            | TokenKind::Newline
+                            | TokenKind::LineComment
+                            | TokenKind::BlockComment => i += 1,
                             _ => break,
                         }
                     }
@@ -410,11 +413,7 @@ mod tests {
         let _ = std::fs::create_dir_all(&dir);
 
         std::fs::write(dir.join("header.h"), "#define VAL 42\n").unwrap();
-        std::fs::write(
-            dir.join("main.c"),
-            "#include \"header.h\"\nint x = VAL;\n",
-        )
-        .unwrap();
+        std::fs::write(dir.join("main.c"), "#include \"header.h\"\nint x = VAL;\n").unwrap();
 
         let mut resolver = IncludeResolver::new();
         let mut proc = Processor::new();
@@ -448,12 +447,7 @@ mod tests {
 
         let text = result.text.trim().to_string();
         // Should only appear once despite two includes
-        assert_eq!(
-            text.matches("int guarded;").count(),
-            1,
-            "got: {}",
-            text
-        );
+        assert_eq!(text.matches("int guarded;").count(), 1, "got: {}", text);
 
         let _ = std::fs::remove_dir_all(&dir);
     }
@@ -469,11 +463,7 @@ mod tests {
             "#include \"types.h\"\nMY_INT api_func();\n",
         )
         .unwrap();
-        std::fs::write(
-            dir.join("main.c"),
-            "#include \"api.h\"\nMY_INT main() {}\n",
-        )
-        .unwrap();
+        std::fs::write(dir.join("main.c"), "#include \"api.h\"\nMY_INT main() {}\n").unwrap();
 
         let mut resolver = IncludeResolver::new();
         let mut proc = Processor::new();
@@ -491,11 +481,7 @@ mod tests {
         let dir = std::env::temp_dir().join("pac_test_pragma_once");
         let _ = std::fs::create_dir_all(&dir);
 
-        std::fs::write(
-            dir.join("once.h"),
-            "#pragma once\nint once_var;\n",
-        )
-        .unwrap();
+        std::fs::write(dir.join("once.h"), "#pragma once\nint once_var;\n").unwrap();
         std::fs::write(
             dir.join("main.c"),
             "#include \"once.h\"\n#include \"once.h\"\n",
@@ -507,12 +493,7 @@ mod tests {
         let result = resolver.preprocess_file(&dir.join("main.c"), &mut proc);
 
         let text = result.text.trim().to_string();
-        assert_eq!(
-            text.matches("int once_var;").count(),
-            1,
-            "got: {}",
-            text
-        );
+        assert_eq!(text.matches("int once_var;").count(), 1, "got: {}", text);
 
         let _ = std::fs::remove_dir_all(&dir);
     }

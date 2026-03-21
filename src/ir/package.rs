@@ -251,8 +251,7 @@ impl SourcePackage {
                 SourceItem::Record(r) => {
                     if let Some(fields) = &mut r.fields {
                         for field in fields {
-                            field.ty =
-                                resolve_type_rec(&field.ty, &ref_table, &mut HashSet::new());
+                            field.ty = resolve_type_rec(&field.ty, &ref_table, &mut HashSet::new());
                         }
                     }
                 }
@@ -300,7 +299,10 @@ fn resolve_type_rec(
         SourceType::Array(elem, size) => {
             SourceType::Array(Box::new(resolve_type_rec(elem, table, visited)), *size)
         }
-        SourceType::Qualified { ty: inner, qualifiers } => {
+        SourceType::Qualified {
+            ty: inner,
+            qualifiers,
+        } => {
             let resolved = resolve_type_rec(inner, table, visited);
             SourceType::qualified(resolved, *qualifiers)
         }
@@ -797,10 +799,7 @@ extern my_uint global;
 
         // Before resolution: types reference "my_uint" and "uint32_t"
         let f = pkg.find_function("get_value").unwrap();
-        assert_eq!(
-            f.return_type,
-            SourceType::TypedefRef("my_uint".into())
-        );
+        assert_eq!(f.return_type, SourceType::TypedefRef("my_uint".into()));
 
         // Resolve
         pkg.resolve_all_typedefs();

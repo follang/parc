@@ -11,7 +11,9 @@ pub fn visit_extension<'ast, V: Visit<'ast> + ?Sized>(
     match *extension {
         Extension::Attribute(ref a) => visitor.visit_attribute(a, span),
         Extension::AsmLabel(ref a) => visitor.visit_string_literal(&a.node, &a.span),
-        Extension::AvailabilityAttribute(ref a) => visitor.visit_availability_attribute(&a.node, &a.span),
+        Extension::AvailabilityAttribute(ref a) => {
+            visitor.visit_availability_attribute(&a.node, &a.span)
+        }
     }
 }
 
@@ -54,7 +56,10 @@ pub fn visit_gnu_extended_asm_statement<'ast, V: Visit<'ast> + ?Sized>(
     if let Some(ref qualifier) = gnu_extended_asm_statement.qualifier {
         visitor.visit_type_qualifier(&qualifier.node, &qualifier.span);
     }
-    visitor.visit_string_literal(&gnu_extended_asm_statement.template.node, &gnu_extended_asm_statement.template.span);
+    visitor.visit_string_literal(
+        &gnu_extended_asm_statement.template.node,
+        &gnu_extended_asm_statement.template.span,
+    );
     for output in &gnu_extended_asm_statement.outputs {
         visitor.visit_gnu_asm_operand(&output.node, &output.span);
     }
@@ -74,8 +79,14 @@ pub fn visit_gnu_asm_operand<'ast, V: Visit<'ast> + ?Sized>(
     if let Some(ref name) = gnu_asm_operand.symbolic_name {
         visitor.visit_identifier(&name.node, &name.span);
     }
-    visitor.visit_string_literal(&gnu_asm_operand.constraints.node, &gnu_asm_operand.constraints.span);
-    visitor.visit_expression(&gnu_asm_operand.variable_name.node, &gnu_asm_operand.variable_name.span);
+    visitor.visit_string_literal(
+        &gnu_asm_operand.constraints.node,
+        &gnu_asm_operand.constraints.span,
+    );
+    visitor.visit_expression(
+        &gnu_asm_operand.variable_name.node,
+        &gnu_asm_operand.variable_name.span,
+    );
 }
 
 pub fn visit_type_of<'ast, V: Visit<'ast> + ?Sized>(

@@ -228,10 +228,10 @@ pub fn apply_derived_type(base: SourceType, declarator: &Declarator) -> SourceTy
     // Pointers wrap inside-out. Pointer qualifier `const` means the pointer itself
     // is const, not that the pointee is const. Pointee constness comes from the base
     // specifiers and is handled by mark_innermost_pointer_const.
-    for _pointer_qualifiers in &pointers {
+    for pointer_qualifiers in &pointers {
         ty = SourceType::Pointer {
             pointee: Box::new(ty),
-            qualifiers: TypeQualifiers::default(),
+            qualifiers: *pointer_qualifiers,
         };
     }
 
@@ -261,21 +261,22 @@ pub fn resolve_full_type(
 /// Mark the innermost pointer in a type as const-pointee.
 pub fn mark_innermost_pointer_const(ty: SourceType) -> SourceType {
     match ty {
-        SourceType::Pointer { pointee, qualifiers } => {
-            match *pointee {
-                inner @ SourceType::Pointer { .. } => SourceType::Pointer {
-                    pointee: Box::new(mark_innermost_pointer_const(inner)),
-                    qualifiers,
+        SourceType::Pointer {
+            pointee,
+            qualifiers,
+        } => match *pointee {
+            inner @ SourceType::Pointer { .. } => SourceType::Pointer {
+                pointee: Box::new(mark_innermost_pointer_const(inner)),
+                qualifiers,
+            },
+            other => SourceType::Pointer {
+                pointee: Box::new(other),
+                qualifiers: TypeQualifiers {
+                    is_const: true,
+                    ..qualifiers
                 },
-                other => SourceType::Pointer {
-                    pointee: Box::new(other),
-                    qualifiers: TypeQualifiers {
-                        is_const: true,
-                        ..qualifiers
-                    },
-                },
-            }
-        }
+            },
+        },
         SourceType::Qualified { ty, qualifiers } => SourceType::Qualified {
             ty: Box::new(mark_innermost_pointer_const(*ty)),
             qualifiers,
@@ -377,12 +378,8 @@ pub fn eval_const_expr(expr: &Expression) -> Option<i128> {
                 BinaryOperator::Greater => Some(if lhs > rhs { 1 } else { 0 }),
                 BinaryOperator::LessOrEqual => Some(if lhs <= rhs { 1 } else { 0 }),
                 BinaryOperator::GreaterOrEqual => Some(if lhs >= rhs { 1 } else { 0 }),
-                BinaryOperator::LogicalAnd => {
-                    Some(if lhs != 0 && rhs != 0 { 1 } else { 0 })
-                }
-                BinaryOperator::LogicalOr => {
-                    Some(if lhs != 0 || rhs != 0 { 1 } else { 0 })
-                }
+                BinaryOperator::LogicalAnd => Some(if lhs != 0 && rhs != 0 { 1 } else { 0 }),
+                BinaryOperator::LogicalOr => Some(if lhs != 0 || rhs != 0 { 1 } else { 0 }),
                 _ => None,
             }
         }

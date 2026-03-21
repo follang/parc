@@ -4,7 +4,6 @@
 //! without panicking or producing wildly incorrect results.
 
 use crate::extract;
-use crate::ir::*;
 
 // --- Empty input ---
 
@@ -119,7 +118,7 @@ fn recovery_empty_enum() {
     let result = extract::parse_and_extract("enum empty {};", crate::driver::Flavor::GnuC11);
     // Should not panic whether it parses or not
     match result {
-        Ok(pkg) => {
+        Ok(_) => {
             // If it parses, the enum should be present
         }
         Err(_) => {
@@ -141,15 +140,13 @@ fn recovery_very_long_identifier() {
 
 #[test]
 fn recovery_stdc11_flavor() {
-    let pkg =
-        extract::parse_and_extract("int foo(void);", crate::driver::Flavor::StdC11).unwrap();
+    let pkg = extract::parse_and_extract("int foo(void);", crate::driver::Flavor::StdC11).unwrap();
     assert_eq!(pkg.function_count(), 1);
 }
 
 #[test]
 fn recovery_gnuc11_flavor() {
-    let pkg =
-        extract::parse_and_extract("int foo(void);", crate::driver::Flavor::GnuC11).unwrap();
+    let pkg = extract::parse_and_extract("int foo(void);", crate::driver::Flavor::GnuC11).unwrap();
     assert_eq!(pkg.function_count(), 1);
 }
 

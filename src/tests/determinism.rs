@@ -45,12 +45,14 @@ extern int debug_mode;
 fn determinism_across_flavors_same_source() {
     // Same source, same flavor -> identical output
     let src = "struct point { int x; int y; };\nvoid draw(struct point *p);";
-    let j1 =
-        serde_json::to_string(&extract::parse_and_extract(src, crate::driver::Flavor::GnuC11).unwrap())
-            .unwrap();
-    let j2 =
-        serde_json::to_string(&extract::parse_and_extract(src, crate::driver::Flavor::GnuC11).unwrap())
-            .unwrap();
+    let j1 = serde_json::to_string(
+        &extract::parse_and_extract(src, crate::driver::Flavor::GnuC11).unwrap(),
+    )
+    .unwrap();
+    let j2 = serde_json::to_string(
+        &extract::parse_and_extract(src, crate::driver::Flavor::GnuC11).unwrap(),
+    )
+    .unwrap();
     assert_eq!(j1, j2);
 }
 

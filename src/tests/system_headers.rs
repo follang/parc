@@ -19,7 +19,10 @@ fn unique_temp_dir() -> PathBuf {
 
 fn write_wrapper(dir: &Path, header: &str) -> PathBuf {
     let wrapper = dir.join("wrapper.c");
-    let source = format!("#include <{}>\nint pac_header_probe(void) {{ return 0; }}\n", header);
+    let source = format!(
+        "#include <{}>\nint pac_header_probe(void) {{ return 0; }}\n",
+        header
+    );
     fs::write(&wrapper, source).expect("writing temporary wrapper");
     wrapper
 }
@@ -56,7 +59,10 @@ fn system_header_wrappers_parse_when_headers_exist() {
         fs::remove_dir(&dir).expect("removing temporary wrapper directory");
     }
 
-    assert!(attempted > 0, "expected at least one system header to exist");
+    assert!(
+        attempted > 0,
+        "expected at least one system header to exist"
+    );
     if !failures.is_empty() {
         panic!(
             "{} system header wrappers failed:\n{}",

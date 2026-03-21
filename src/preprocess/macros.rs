@@ -91,8 +91,7 @@ impl MacroTable {
                         // Function-like macro — need to collect arguments
                         if let Some((args, end)) = self.collect_macro_args(tokens, i + 1) {
                             paint.push(tok.text.clone());
-                            let expanded_body =
-                                self.substitute_fn_macro(def, &args);
+                            let expanded_body = self.substitute_fn_macro(def, &args);
                             let expanded = self.expand_with_paint(&expanded_body, paint);
                             paint.pop();
                             result.extend(expanded);
@@ -137,12 +136,18 @@ impl MacroTable {
             } else if tokens[i].text == ")" {
                 if depth == 0 {
                     i += 1; // skip )
-                    // Trim whitespace from args
+                            // Trim whitespace from args
                     for arg in &mut args {
-                        while arg.first().map_or(false, |t| t.kind == TokenKind::Whitespace) {
+                        while arg
+                            .first()
+                            .map_or(false, |t| t.kind == TokenKind::Whitespace)
+                        {
                             arg.remove(0);
                         }
-                        while arg.last().map_or(false, |t| t.kind == TokenKind::Whitespace) {
+                        while arg
+                            .last()
+                            .map_or(false, |t| t.kind == TokenKind::Whitespace)
+                        {
                             arg.pop();
                         }
                     }
@@ -204,7 +209,10 @@ impl MacroTable {
             // Check for token pasting: a ## b
             if tok.kind == TokenKind::HashHash {
                 // Remove trailing whitespace from result
-                while result.last().map_or(false, |t: &Token| t.kind == TokenKind::Whitespace) {
+                while result
+                    .last()
+                    .map_or(false, |t: &Token| t.kind == TokenKind::Whitespace)
+                {
                     result.pop();
                 }
                 i += 1;
@@ -214,13 +222,13 @@ impl MacroTable {
                 }
                 if i < def.body.len() {
                     let right = &def.body[i];
-                    let right_text =
-                        if let Some(idx) = params.iter().position(|p| p == &right.text) {
-                            let arg = args.get(idx).cloned().unwrap_or_default();
-                            tokens_to_string(&arg)
-                        } else {
-                            right.text.clone()
-                        };
+                    let right_text = if let Some(idx) = params.iter().position(|p| p == &right.text)
+                    {
+                        let arg = args.get(idx).cloned().unwrap_or_default();
+                        tokens_to_string(&arg)
+                    } else {
+                        right.text.clone()
+                    };
                     if let Some(left) = result.last_mut() {
                         left.text.push_str(&right_text);
                     }
@@ -338,10 +346,7 @@ mod tests {
 
     #[test]
     fn expand_chained() {
-        let result = expand_str(
-            &[("A", "B"), ("B", "42")],
-            "int x = A;\n",
-        );
+        let result = expand_str(&[("A", "B"), ("B", "42")], "int x = A;\n");
         assert_eq!(result, "int x = 42;");
     }
 

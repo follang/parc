@@ -179,10 +179,7 @@ typedef uint32_t my_uint;
     let pkg = extract_ok(src);
     let my_uint = pkg.find_type_alias("my_uint").unwrap();
     // pac preserves the chain — target is TypedefRef, not eagerly resolved UInt
-    assert_eq!(
-        my_uint.target,
-        SourceType::TypedefRef("uint32_t".into())
-    );
+    assert_eq!(my_uint.target, SourceType::TypedefRef("uint32_t".into()));
 }
 
 #[test]
@@ -224,7 +221,11 @@ fn diff_function_pointer_typedef() {
     let alias = pkg.find_type_alias("handler_t").unwrap();
     match &alias.target {
         SourceType::Pointer { pointee, .. } => match pointee.as_ref() {
-            SourceType::FunctionPointer { return_type, parameters, variadic } => {
+            SourceType::FunctionPointer {
+                return_type,
+                parameters,
+                variadic,
+            } => {
                 assert_eq!(**return_type, SourceType::Void);
                 assert_eq!(parameters.len(), 1);
                 assert!(!variadic);

@@ -234,8 +234,8 @@ mod tests {
 
     #[test]
     fn predefined_works_with_processor() {
-        use super::super::processor::{Processor, tokens_to_text};
         use super::super::lexer::Lexer;
+        use super::super::processor::{tokens_to_text, Processor};
 
         let mut table = MacroTable::new();
         define_target_macros(&mut table, &Target::host());

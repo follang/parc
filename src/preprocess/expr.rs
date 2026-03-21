@@ -41,7 +41,11 @@ fn expand_for_condition(tokens: &[Token], macros: &MacroTable) -> Vec<Token> {
                     i += 1;
                 }
                 if i < tokens.len() && tokens[i].kind == TokenKind::Ident {
-                    let val = if macros.is_defined(&tokens[i].text) { 1 } else { 0 };
+                    let val = if macros.is_defined(&tokens[i].text) {
+                        1
+                    } else {
+                        0
+                    };
                     result.push(Token {
                         kind: TokenKind::Number,
                         text: val.to_string(),
@@ -56,7 +60,11 @@ fn expand_for_condition(tokens: &[Token], macros: &MacroTable) -> Vec<Token> {
                     }
                 }
             } else if i < tokens.len() && tokens[i].kind == TokenKind::Ident {
-                let val = if macros.is_defined(&tokens[i].text) { 1 } else { 0 };
+                let val = if macros.is_defined(&tokens[i].text) {
+                    1
+                } else {
+                    0
+                };
                 result.push(Token {
                     kind: TokenKind::Number,
                     text: val.to_string(),
@@ -131,7 +139,11 @@ impl<'a> ExprParser<'a> {
                 self.advance(); // skip :
             }
             let else_val = self.ternary();
-            if cond != 0 { then_val } else { else_val }
+            if cond != 0 {
+                then_val
+            } else {
+                else_val
+            }
         } else {
             cond
         }
@@ -189,8 +201,14 @@ impl<'a> ExprParser<'a> {
         loop {
             let op = self.peek_text().to_owned();
             match op.as_str() {
-                "==" => { self.advance(); val = if val == self.relational() { 1 } else { 0 }; }
-                "!=" => { self.advance(); val = if val != self.relational() { 1 } else { 0 }; }
+                "==" => {
+                    self.advance();
+                    val = if val == self.relational() { 1 } else { 0 };
+                }
+                "!=" => {
+                    self.advance();
+                    val = if val != self.relational() { 1 } else { 0 };
+                }
                 _ => break,
             }
         }
@@ -202,10 +220,22 @@ impl<'a> ExprParser<'a> {
         loop {
             let op = self.peek_text().to_owned();
             match op.as_str() {
-                "<" if !self.peek_text_is("<<") => { self.advance(); val = if val < self.shift() { 1 } else { 0 }; }
-                ">" if !self.peek_text_is(">>") => { self.advance(); val = if val > self.shift() { 1 } else { 0 }; }
-                "<=" => { self.advance(); val = if val <= self.shift() { 1 } else { 0 }; }
-                ">=" => { self.advance(); val = if val >= self.shift() { 1 } else { 0 }; }
+                "<" if !self.peek_text_is("<<") => {
+                    self.advance();
+                    val = if val < self.shift() { 1 } else { 0 };
+                }
+                ">" if !self.peek_text_is(">>") => {
+                    self.advance();
+                    val = if val > self.shift() { 1 } else { 0 };
+                }
+                "<=" => {
+                    self.advance();
+                    val = if val <= self.shift() { 1 } else { 0 };
+                }
+                ">=" => {
+                    self.advance();
+                    val = if val >= self.shift() { 1 } else { 0 };
+                }
                 _ => break,
             }
         }
@@ -217,8 +247,14 @@ impl<'a> ExprParser<'a> {
         loop {
             let op = self.peek_text().to_owned();
             match op.as_str() {
-                "<<" => { self.advance(); val <<= self.additive(); }
-                ">>" => { self.advance(); val >>= self.additive(); }
+                "<<" => {
+                    self.advance();
+                    val <<= self.additive();
+                }
+                ">>" => {
+                    self.advance();
+                    val >>= self.additive();
+                }
                 _ => break,
             }
         }
@@ -230,8 +266,14 @@ impl<'a> ExprParser<'a> {
         loop {
             let op = self.peek_text().to_owned();
             match op.as_str() {
-                "+" => { self.advance(); val += self.multiplicative(); }
-                "-" => { self.advance(); val -= self.multiplicative(); }
+                "+" => {
+                    self.advance();
+                    val += self.multiplicative();
+                }
+                "-" => {
+                    self.advance();
+                    val -= self.multiplicative();
+                }
                 _ => break,
             }
         }
@@ -243,7 +285,10 @@ impl<'a> ExprParser<'a> {
         loop {
             let op = self.peek_text().to_owned();
             match op.as_str() {
-                "*" => { self.advance(); val *= self.unary(); }
+                "*" => {
+                    self.advance();
+                    val *= self.unary();
+                }
                 "/" => {
                     self.advance();
                     let rhs = self.unary();
@@ -263,10 +308,26 @@ impl<'a> ExprParser<'a> {
     fn unary(&mut self) -> i64 {
         let op = self.peek_text().to_owned();
         match op.as_str() {
-            "!" => { self.advance(); if self.unary() == 0 { 1 } else { 0 } }
-            "-" => { self.advance(); -self.unary() }
-            "+" => { self.advance(); self.unary() }
-            "~" => { self.advance(); !self.unary() }
+            "!" => {
+                self.advance();
+                if self.unary() == 0 {
+                    1
+                } else {
+                    0
+                }
+            }
+            "-" => {
+                self.advance();
+                -self.unary()
+            }
+            "+" => {
+                self.advance();
+                self.unary()
+            }
+            "~" => {
+                self.advance();
+                !self.unary()
+            }
             _ => self.primary(),
         }
     }

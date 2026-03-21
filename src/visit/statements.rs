@@ -34,7 +34,10 @@ pub fn visit_labeled_statement<'ast, V: Visit<'ast> + ?Sized>(
     _span: &'ast Span,
 ) {
     visitor.visit_label(&labeled_statement.label.node, &labeled_statement.label.span);
-    visitor.visit_statement(&labeled_statement.statement.node, &labeled_statement.statement.span);
+    visitor.visit_statement(
+        &labeled_statement.statement.node,
+        &labeled_statement.statement.span,
+    );
 }
 
 pub fn visit_if_statement<'ast, V: Visit<'ast> + ?Sized>(
@@ -43,7 +46,10 @@ pub fn visit_if_statement<'ast, V: Visit<'ast> + ?Sized>(
     _span: &'ast Span,
 ) {
     visitor.visit_expression(&if_statement.condition.node, &if_statement.condition.span);
-    visitor.visit_statement(&if_statement.then_statement.node, &if_statement.then_statement.span);
+    visitor.visit_statement(
+        &if_statement.then_statement.node,
+        &if_statement.then_statement.span,
+    );
     if let Some(ref e) = if_statement.else_statement {
         visitor.visit_statement(&e.node, &e.span);
     }
@@ -54,8 +60,14 @@ pub fn visit_switch_statement<'ast, V: Visit<'ast> + ?Sized>(
     switch_statement: &'ast SwitchStatement,
     _span: &'ast Span,
 ) {
-    visitor.visit_expression(&switch_statement.expression.node, &switch_statement.expression.span);
-    visitor.visit_statement(&switch_statement.statement.node, &switch_statement.statement.span);
+    visitor.visit_expression(
+        &switch_statement.expression.node,
+        &switch_statement.expression.span,
+    );
+    visitor.visit_statement(
+        &switch_statement.statement.node,
+        &switch_statement.statement.span,
+    );
 }
 
 pub fn visit_while_statement<'ast, V: Visit<'ast> + ?Sized>(
@@ -63,8 +75,14 @@ pub fn visit_while_statement<'ast, V: Visit<'ast> + ?Sized>(
     while_statement: &'ast WhileStatement,
     _span: &'ast Span,
 ) {
-    visitor.visit_expression(&while_statement.expression.node, &while_statement.expression.span);
-    visitor.visit_statement(&while_statement.statement.node, &while_statement.statement.span);
+    visitor.visit_expression(
+        &while_statement.expression.node,
+        &while_statement.expression.span,
+    );
+    visitor.visit_statement(
+        &while_statement.statement.node,
+        &while_statement.statement.span,
+    );
 }
 
 pub fn visit_do_while_statement<'ast, V: Visit<'ast> + ?Sized>(
@@ -72,8 +90,14 @@ pub fn visit_do_while_statement<'ast, V: Visit<'ast> + ?Sized>(
     do_while_statement: &'ast DoWhileStatement,
     _span: &'ast Span,
 ) {
-    visitor.visit_statement(&do_while_statement.statement.node, &do_while_statement.statement.span);
-    visitor.visit_expression(&do_while_statement.expression.node, &do_while_statement.expression.span);
+    visitor.visit_statement(
+        &do_while_statement.statement.node,
+        &do_while_statement.statement.span,
+    );
+    visitor.visit_expression(
+        &do_while_statement.expression.node,
+        &do_while_statement.expression.span,
+    );
 }
 
 pub fn visit_for_statement<'ast, V: Visit<'ast> + ?Sized>(
@@ -81,7 +105,10 @@ pub fn visit_for_statement<'ast, V: Visit<'ast> + ?Sized>(
     for_statement: &'ast ForStatement,
     _span: &'ast Span,
 ) {
-    visitor.visit_for_initializer(&for_statement.initializer.node, &for_statement.initializer.span);
+    visitor.visit_for_initializer(
+        &for_statement.initializer.node,
+        &for_statement.initializer.span,
+    );
     if let Some(ref c) = for_statement.condition {
         visitor.visit_expression(&c.node, &c.span);
     }

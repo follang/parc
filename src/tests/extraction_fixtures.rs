@@ -41,7 +41,10 @@ int ferror(struct FILE *stream);
     assert_eq!(fprintf.parameters.len(), 2);
 
     let fwrite = pkg.find_function("fwrite").unwrap();
-    assert_eq!(fwrite.parameters[0].ty, SourceType::const_ptr(SourceType::Void));
+    assert_eq!(
+        fwrite.parameters[0].ty,
+        SourceType::const_ptr(SourceType::Void)
+    );
 }
 
 // --- Nested structs ---
@@ -200,10 +203,7 @@ typedef union value value_t;
     assert_eq!(fields[3].ty, SourceType::ptr(SourceType::Void));
 
     let alias = pkg.find_type_alias("value_t").unwrap();
-    assert_eq!(
-        alias.target,
-        SourceType::RecordRef("value".into())
-    );
+    assert_eq!(alias.target, SourceType::RecordRef("value".into()));
 }
 
 // --- Extern variables ---
@@ -282,12 +282,15 @@ const char *const *get_list(void);
     let pkg = extract::extract_from_source(src).unwrap();
 
     let get_name = pkg.find_function("get_name").unwrap();
-    assert_eq!(get_name.return_type, SourceType::const_ptr(SourceType::Char));
+    assert_eq!(
+        get_name.return_type,
+        SourceType::const_ptr(SourceType::Char)
+    );
 
     // char *const — const pointer to char
     let get_buffer = pkg.find_function("get_buffer").unwrap();
     match &get_buffer.return_type {
-        SourceType::Pointer { qualifiers, .. } => {
+        SourceType::Pointer { qualifiers: _, .. } => {
             // The pointer itself should have some const marking
             // (This tests that we handle pointer-level const correctly)
         }
