@@ -106,6 +106,31 @@ fn hostile_order_env_d_corpus_scans_with_builtin_preprocessor() {
 }
 
 #[test]
+fn hostile_include_env_e_corpus_scans_with_builtin_preprocessor() {
+    let root = corpus_root("include_env_e");
+    let include_dir = root.join("include");
+    let entry = root.join("entry.h");
+
+    let result = scan_headers(
+        &ScanConfig::new()
+            .entry_header(&entry)
+            .include_dir(&include_dir)
+            .with_builtin_preprocessor()
+            .with_resolve_typedefs(),
+    )
+    .expect("include-order hostile corpus should scan");
+
+    let pkg = &result.package;
+    assert!(pkg.find_type_alias("include_counter_t").is_some());
+    assert!(pkg.find_type_alias("include_log_sink").is_some());
+    assert!(pkg.find_record("include_frame").is_some());
+    assert!(pkg.find_function("include_open").is_some());
+    assert!(pkg.find_function("include_flush").is_some());
+    assert!(result.preprocessed_source.contains("include_frame"));
+    assert!(result.preprocessed_source.contains("va_list"));
+}
+
+#[test]
 fn hostile_macro_env_corpus_builtin_and_external_preprocessors_agree_on_items() {
     let root = corpus_root("macro_env_a");
     let include_dir = root.join("include");
