@@ -1,3 +1,4 @@
+mod closure_ledger;
 mod consumability;
 mod contract;
 mod determinism;
