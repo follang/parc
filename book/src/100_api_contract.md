@@ -72,7 +72,7 @@ If you are building on top of `parc`, the safest current rules are:
 4. use `visit` for traversal instead of hand-rolling recursive descent everywhere
 5. use `span` and `loc` for diagnostics rather than guessing source positions
 6. do not rely on exact error-message strings for durable control flow
-7. do not treat PAC as semantic analysis, type checking, or ABI proof
+7. do not treat PARC as semantic analysis, type checking, or ABI proof
 8. if another crate needs PARC output, serialize the PARC-owned artifact and
    translate it outside library code
 

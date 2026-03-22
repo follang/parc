@@ -18,7 +18,7 @@ This is the baseline path when:
 - macros matter
 - compiler predefined types or macros matter
 
-The result gives you both the AST and the exact preprocessed source PAC saw.
+The result gives you both the AST and the exact preprocessed source PARC saw.
 
 ## Workflow 2: Parse A Preprocessed Snapshot
 
@@ -82,7 +82,7 @@ println!("return statements: {}", counter.count);
 # Ok::<(), parc::driver::Error>(())
 ```
 
-This is the normal PAC analyzer pattern:
+This is the normal PARC analyzer pattern:
 
 1. parse
 2. traverse

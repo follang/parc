@@ -17,7 +17,7 @@ harnesses.
 
 ```toml
 [dependencies]
-parc = { path = "../pac" }
+parc = { path = "../parc" }
 ```
 
 ## Pick the right API first

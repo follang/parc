@@ -8,7 +8,7 @@ three things:
 - cross-package composition can start from `parc` artifacts without relying on
   `parc` internals
 
-PAC has two broad testing layers:
+PARC has two broad testing layers:
 
 - direct parser/API tests in `src/tests`
 - corpus-style fixtures under `test/reftests/` and, when present, `test/full_apps/`
@@ -147,7 +147,7 @@ Uses both strict parsing (error expected) and resilient parsing (recovery expect
 ## Contract tests
 
 `src/tests/contract.rs` and `src/tests/consumability.rs` verify that the `SourcePackage`
-contract is sufficient for downstream consumers. These test iteration patterns, type
+contract is sufficient for downstream consumers. These tests cover iteration patterns, type
 navigation, serialization, filtering, merging, and programmatic construction.
 
 ## Differential tests

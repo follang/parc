@@ -1,6 +1,6 @@
 # Location Tracking
 
-PAC tracks source positions in two related ways:
+PARC tracks source positions in two related ways:
 
 - `Span` stores byte offsets into the parsed input
 - `loc` maps byte offsets in preprocessed source back to original files and lines
@@ -103,5 +103,5 @@ This is the best starting point for user-facing diagnostics.
 
 ## Caveat: byte offsets, not columns in UTF-16
 
-PAC stores Rust byte offsets. That is usually what you want for source processing, but if you are
+PARC stores Rust byte offsets. That is usually what you want for source processing, but if you are
 feeding results into another tool that expects a different coordinate system, convert explicitly.

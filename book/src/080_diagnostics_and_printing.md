@@ -1,6 +1,6 @@
 # Diagnostics And Printing
 
-PAC includes two pieces that are especially useful when building tools on top of the parser:
+PARC includes two pieces that are especially useful when building tools on top of the parser:
 
 - detailed parse errors
 - a tree printer for AST inspection
@@ -77,7 +77,7 @@ println!("{}", out);
 
 The printer is ideal when:
 
-- learning how PAC models a syntax form
+- learning how PARC models a syntax form
 - updating reftests
 - debugging traversal code
 

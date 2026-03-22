@@ -6,11 +6,11 @@ This chapter records usage patterns that are safest for downstream consumers.
 
 A durable integration pattern is:
 
-1. parse with PAC
+1. parse with PARC
 2. convert the AST into your own analysis model if needed
 3. run later semantic or policy logic on that model
 
-This avoids coupling too much of your tool to every detail of PAC’s raw AST layout.
+This avoids coupling too much of your tool to every detail of PARC’s raw AST layout.
 
 ## Pattern 2: Preserve preprocessed source for diagnostics
 

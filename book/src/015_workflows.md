@@ -1,6 +1,6 @@
 # Common Workflows
 
-Most confusion with PAC comes from choosing the wrong entry point. This chapter maps common tasks to
+Most confusion with PARC comes from choosing the wrong entry point. This chapter maps common tasks to
 the right API.
 
 Read the workflows in this order:
@@ -37,7 +37,7 @@ This gives you:
 
 ## Parse preprocessed text
 
-Use this when another tool already ran preprocessing and you only want PAC to parse.
+Use this when another tool already ran preprocessing and you only want PARC to parse.
 
 ```rust
 use parc::driver::{parse_preprocessed, Config};

@@ -1,10 +1,10 @@
 # Error Surface
 
-This chapter describes the error model PAC exposes today.
+This chapter describes the error model PARC exposes today.
 
 ## Two layers of errors
 
-PAC has two main error surfaces:
+PARC has two main error surfaces:
 
 1. direct parser errors from `parse`
 2. driver errors from `driver`
@@ -47,8 +47,8 @@ That error enum has two branches:
 
 This split is a real contract boundary:
 
-- preprocessor failures mean PAC never reached parsing
-- syntax failures mean preprocessing succeeded and PAC failed on the resulting text
+- preprocessor failures mean PARC never reached parsing
+- syntax failures mean preprocessing succeeded and PARC failed on the resulting text
 
 ## `SyntaxError`
 
@@ -148,4 +148,4 @@ The current model does not provide:
 - a typed taxonomy for every grammar category of failure
 - warning channels separate from parse success
 
-PAC’s errors are syntax-oriented rather than compiler-like.
+PARC’s errors are syntax-oriented rather than compiler-like.

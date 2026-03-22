@@ -2,7 +2,7 @@
 
 Parsing C is sensitive to the exact preprocessor environment.
 
-This chapter documents how to keep PAC-based workflows reproducible.
+This chapter documents how to keep PARC-based workflows reproducible.
 
 ## Main reproducibility risks
 
@@ -30,7 +30,7 @@ If a real file parse is inconsistent across machines, a strong debugging move is
 
 1. capture the preprocessed output
 2. switch the failing test to `parse_preprocessed`
-3. debug PAC against the stable snapshot
+3. debug PARC against the stable snapshot
 
 That separates:
 
@@ -44,7 +44,7 @@ output. For parser bugs that depend on preprocessing, a pinned `.i` file is ofte
 
 ## Consumer guidance
 
-If PAC is part of a larger pipeline, keep the following recorded somewhere durable:
+If PARC is part of a larger pipeline, keep the following recorded somewhere durable:
 
 - preprocessor executable
 - preprocessor arguments

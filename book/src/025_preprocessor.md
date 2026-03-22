@@ -1,6 +1,6 @@
 # Built-in Preprocessor
 
-PAC includes a complete built-in C preprocessor in the `parc::preprocess` module.
+PARC includes a complete built-in C preprocessor in the `parc::preprocess` module.
 This eliminates the runtime dependency on `gcc` or `clang` for preprocessing.
 
 ## Architecture

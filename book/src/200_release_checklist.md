@@ -61,5 +61,5 @@ Before releasing a `SourcePackage` shape change:
 
 ## Final practical rule
 
-If a change would force a downstream PAC consumer to rethink how it parses, traverses, or reports
+If a change would force a downstream PARC consumer to rethink how it parses, traverses, or reports
 on source, the book should say so explicitly in the same change.

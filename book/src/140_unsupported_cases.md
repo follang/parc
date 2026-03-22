@@ -6,7 +6,7 @@ The goal is to prevent downstream users from mistaking absence of detail for imp
 
 ## Semantic analysis
 
-PAC does not provide:
+PARC does not provide:
 
 - full name resolution
 - type checking
@@ -18,18 +18,18 @@ It is a parser with source-structure support, not a complete compiler frontend.
 
 ## Preprocessing
 
-PAC does not implement a standalone C preprocessor in the `driver` path.
+PARC does not implement a standalone C preprocessor in the `driver` path.
 
 Instead it depends on an external preprocessor command such as:
 
 - `gcc -E`
 - `clang -E`
 
-That means PAC does not try to normalize every compiler’s preprocessing behavior internally.
+That means PARC does not try to normalize every compiler’s preprocessing behavior internally.
 
 ## Extension completeness
 
-PAC supports several GNU and Clang extensions, but the project does not promise complete parity
+PARC supports several GNU and Clang extensions, but the project does not promise complete parity
 with every extension accepted by modern GCC or Clang releases.
 
 Downstream tools should not assume:
@@ -40,14 +40,14 @@ Downstream tools should not assume:
 
 ## Macro inventory and expansion modeling
 
-PAC parses the post-preprocessing result. It does not expose a first-class macro inventory or a
+PARC parses the post-preprocessing result. It does not expose a first-class macro inventory or a
 stable semantic model of macro definitions as its own output contract.
 
-If you need macro capture as data, that is outside PAC’s current scope.
+If you need macro capture as data, that is outside PARC’s current scope.
 
 ## Translation-unit semantics
 
-PAC can parse translation units, but it does not guarantee:
+PARC can parse translation units, but it does not guarantee:
 
 - cross-file symbol resolution
 - duplicate-definition analysis as a stable feature
@@ -58,7 +58,7 @@ Those tasks belong to later analysis layers, not the parser itself.
 
 ## Diagnostics depth
 
-PAC does not currently provide:
+PARC does not currently provide:
 
 - warning classes
 - fix-it suggestions

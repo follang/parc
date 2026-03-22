@@ -1,6 +1,6 @@
 # Support Tiers
 
-This chapter records a practical support posture for PAC’s public surface.
+This chapter records a practical support posture for PARC’s public surface.
 
 It is meant to help downstream users judge which parts of the crate are the safest long-term
 integration points.
@@ -42,6 +42,6 @@ These details may evolve as the parser changes.
 
 ## Consumer guidance
 
-If you are building external tooling on top of PAC, bias toward Tier 1 surfaces first.
+If you are building external tooling on top of PARC, bias toward Tier 1 surfaces first.
 Reach for Tier 2 when you need diagnostics or debugging support.
-Treat Tier 3 as implementation detail unless you are actively contributing to PAC itself.
+Treat Tier 3 as implementation detail unless you are actively contributing to PARC itself.

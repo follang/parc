@@ -1,6 +1,6 @@
 # Flavor And Extension Support
 
-PAC supports three language flavors and several extension families.
+PARC supports three language flavors and several extension families.
 
 This chapter records what that means in practice.
 
@@ -44,7 +44,7 @@ starting point.
 
 ## Clang-oriented support
 
-PAC also models Clang-specific or Clang-common syntax including:
+PARC also models Clang-specific or Clang-common syntax including:
 
 - Clang availability attributes
 - the `ClangC11` flavor path in `driver` and `parse`
@@ -54,7 +54,7 @@ If your preprocessing and syntax assumptions are built around Clang, use `Config
 
 ## C23 keyword support
 
-PAC accepts the following C23 keywords in all flavors, because modern compilers (GCC 15+) emit them
+PARC accepts the following C23 keywords in all flavors, because modern compilers (GCC 15+) emit them
 in preprocessed output by default:
 
 | C23 keyword | C11 equivalent | Notes |
@@ -75,7 +75,7 @@ in preprocessed output by default:
 
 ## GCC extension types
 
-PAC recognizes these GCC extension types in GNU mode:
+PARC recognizes these GCC extension types in GNU mode:
 
 | Type | AST variant | Notes |
 | --- | --- | --- |
@@ -103,5 +103,5 @@ A useful integration policy is:
 
 This chapter does not claim exhaustive support for every extension accepted by GCC or Clang.
 
-It does claim that PAC has explicit support for several important extension families and that the
+It does claim that PARC has explicit support for several important extension families and that the
 flavor setting is part of the API contract for using them correctly.

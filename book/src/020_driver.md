@@ -26,7 +26,7 @@ pub struct Parse {
 
 The return value matters:
 
-- `source` is the preprocessed source PAC actually parsed
+- `source` is the preprocessed source PARC actually parsed
 - `unit` is the AST root
 
 ## Basic file parsing
@@ -144,7 +144,7 @@ original file and include stack.
 
 ## Built-in preprocessor
 
-PAC includes a built-in C preprocessor that eliminates the need for an external
+PARC includes a built-in C preprocessor that eliminates the need for an external
 `gcc` or `clang` binary. Use `parse_builtin` instead of `parse`:
 
 ```rust
