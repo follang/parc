@@ -4,9 +4,18 @@ use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::driver::{self, Config};
+use crate::extract;
+use crate::ir::SourcePackage;
 
 fn known_system_headers() -> Vec<&'static str> {
     vec!["stdint.h", "stdio.h", "linux/stddef.h", "linux/input.h"]
+}
+
+fn find_header<'a>(candidates: &'a [&'a str]) -> Option<&'a str> {
+    candidates
+        .iter()
+        .copied()
+        .find(|candidate| Path::new(candidate).exists())
 }
 
 fn unique_temp_dir() -> PathBuf {
@@ -119,4 +128,35 @@ fn preprocess_for_test(config: &Config, source: &Path) -> Option<String> {
     } else {
         None
     }
+}
+
+fn parse_wrapper_package(path: &Path) -> Option<SourcePackage> {
+    let mut config = Config::with_gcc();
+    config.cpp_options.push("-D_GNU_SOURCE".to_owned());
+    let parsed = driver::parse(&config, path).ok()?;
+    Some(extract::extract_from_translation_unit(&parsed.unit, None))
+}
+
+#[test]
+fn openssl_wrapper_extracts_public_surface_when_headers_exist() {
+    let Some(header) = find_header(&[
+        "/usr/include/openssl/ssl.h",
+        "/usr/include/x86_64-linux-gnu/openssl/ssl.h",
+    ]) else {
+        return;
+    };
+
+    let dir = unique_temp_dir();
+    fs::create_dir_all(&dir).expect("creating temporary wrapper directory");
+    let wrapper = write_wrapper(&dir, Path::new(header).strip_prefix("/usr/include/").ok().and_then(|p| p.to_str()).unwrap_or("openssl/ssl.h"));
+
+    let pkg = parse_wrapper_package(&wrapper).expect("openssl wrapper should parse and extract");
+
+    assert!(pkg.find_function("SSL_new").is_some() || pkg.find_function("SSL_CTX_new").is_some());
+    assert!(pkg.find_type_alias("SSL").is_some());
+    assert!(pkg.find_type_alias("SSL_CTX").is_some());
+    assert!(pkg.item_count() >= 20);
+
+    fs::remove_file(&wrapper).expect("removing temporary wrapper");
+    fs::remove_dir(&dir).expect("removing temporary wrapper directory");
 }
