@@ -192,3 +192,46 @@ fn openssl_wrapper_extracts_deterministically_when_headers_exist() {
 
     assert_eq!(make(), make());
 }
+
+#[test]
+fn linux_event_loop_wrapper_extracts_combined_surface_when_headers_exist() {
+    let headers = [
+        "/usr/include/sys/epoll.h",
+        "/usr/include/sys/timerfd.h",
+        "/usr/include/sys/signalfd.h",
+        "/usr/include/x86_64-linux-gnu/sys/epoll.h",
+        "/usr/include/x86_64-linux-gnu/sys/timerfd.h",
+        "/usr/include/x86_64-linux-gnu/sys/signalfd.h",
+    ];
+
+    let epoll_candidates = [headers[0], headers[3]];
+    let timerfd_candidates = [headers[1], headers[4]];
+    let signalfd_candidates = [headers[2], headers[5]];
+    let epoll = find_header(&epoll_candidates);
+    let timerfd = find_header(&timerfd_candidates);
+    let signalfd = find_header(&signalfd_candidates);
+    if epoll.is_none() || timerfd.is_none() || signalfd.is_none() {
+        return;
+    }
+
+    let dir = unique_temp_dir();
+    fs::create_dir_all(&dir).expect("creating temporary wrapper directory");
+    let wrapper = dir.join("wrapper.c");
+    fs::write(
+        &wrapper,
+        "#include <sys/epoll.h>\n#include <sys/timerfd.h>\n#include <sys/signalfd.h>\n",
+    )
+    .expect("writing temporary wrapper");
+
+    let pkg = parse_wrapper_package(&wrapper).expect("combined linux wrapper should parse");
+
+    assert!(pkg.find_function("epoll_create1").is_some());
+    assert!(pkg.find_function("timerfd_create").is_some());
+    assert!(pkg.find_function("signalfd").is_some());
+    assert!(pkg.find_record("epoll_event").is_some());
+    assert!(pkg.find_record("signalfd_siginfo").is_some());
+    assert!(pkg.item_count() >= 20);
+
+    fs::remove_file(&wrapper).expect("removing temporary wrapper");
+    fs::remove_dir(&dir).expect("removing temporary wrapper directory");
+}
