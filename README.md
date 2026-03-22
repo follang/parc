@@ -118,6 +118,7 @@ The current hardening ladder is easiest to read in four buckets:
   - vendored libpng builtin-preprocessor success surface
 - host-dependent public-header ladders
   - OpenSSL public wrapper extraction
+  - libcurl public wrapper extraction
   - Linux combined event-loop wrapper extraction
 - hostile and degraded surfaces
   - hostile declaration fixtures
@@ -134,6 +135,7 @@ The current hardening ladder is easiest to read in four buckets:
   - `macro_env_a` scan
   - `type_env_b` scan
   - OpenSSL wrapper extraction
+  - libcurl wrapper extraction
   - combined Linux event-loop wrapper extraction
 
 Read those as the current confidence anchors, not as a promise that every
@@ -159,6 +161,7 @@ The current canonical frontend surfaces are:
 - repo-owned `macro_env_a` hostile macro corpus
 - repo-owned `type_env_b` hostile type corpus
 - OpenSSL public wrapper extraction
+- libcurl public wrapper extraction
 - combined Linux event-loop wrapper extraction
 
 ## Canonical Corpus
@@ -174,6 +177,7 @@ The current PARC production corpus is intentionally named:
   - `test/corpus/type_env_b`
 - host-dependent raises
   - OpenSSL public wrapper extraction
+  - libcurl public wrapper extraction
   - combined Linux event-loop wrapper extraction
 - conservative-failure anchors
   - vendored zlib builtin-preprocessor conservative parse failure

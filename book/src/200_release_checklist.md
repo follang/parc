@@ -61,6 +61,7 @@ Before releasing a `SourcePackage` shape change:
   - vendored zlib
   - vendored libpng scan
   - OpenSSL public wrapper extraction
+  - libcurl public wrapper extraction
   - combined Linux event-loop wrapper extraction
 - deterministic repeated extraction still holds on the canonical large surfaces
 - the book still teaches `parc` as the source-meaning crate
