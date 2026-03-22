@@ -194,6 +194,72 @@ fn openssl_wrapper_extracts_deterministically_when_headers_exist() {
 }
 
 #[test]
+fn libcurl_wrapper_extracts_public_surface_when_headers_exist() {
+    let Some(header) = find_header(&[
+        "/usr/include/curl/curl.h",
+        "/usr/include/x86_64-linux-gnu/curl/curl.h",
+    ]) else {
+        return;
+    };
+
+    let dir = unique_temp_dir();
+    fs::create_dir_all(&dir).expect("creating temporary wrapper directory");
+    let wrapper = write_wrapper(
+        &dir,
+        Path::new(header)
+            .strip_prefix("/usr/include/")
+            .ok()
+            .and_then(|p| p.to_str())
+            .unwrap_or("curl/curl.h"),
+    );
+
+    let pkg = parse_wrapper_package(&wrapper).expect("libcurl wrapper should parse and extract");
+
+    assert!(pkg.find_function("curl_easy_init").is_some());
+    assert!(pkg.find_function("curl_easy_setopt").is_some());
+    assert!(pkg.find_enum("curl_khtype").is_some());
+    assert!(
+        pkg.find_type_alias("CURL").is_some() || pkg.find_type_alias("CURLM").is_some()
+    );
+    assert!(pkg.item_count() >= 40);
+
+    fs::remove_file(&wrapper).expect("removing temporary wrapper");
+    fs::remove_dir(&dir).expect("removing temporary wrapper directory");
+}
+
+#[test]
+fn libcurl_wrapper_extracts_deterministically_when_headers_exist() {
+    let Some(header) = find_header(&[
+        "/usr/include/curl/curl.h",
+        "/usr/include/x86_64-linux-gnu/curl/curl.h",
+    ]) else {
+        return;
+    };
+
+    let make = || {
+        let dir = unique_temp_dir();
+        fs::create_dir_all(&dir).expect("creating temporary wrapper directory");
+        let wrapper = write_wrapper(
+            &dir,
+            Path::new(header)
+                .strip_prefix("/usr/include/")
+                .ok()
+                .and_then(|p| p.to_str())
+                .unwrap_or("curl/curl.h"),
+        );
+
+        let pkg = parse_wrapper_package(&wrapper).expect("libcurl wrapper should parse and extract");
+        let json = serde_json::to_string(&pkg).expect("libcurl package json");
+
+        fs::remove_file(&wrapper).expect("removing temporary wrapper");
+        fs::remove_dir(&dir).expect("removing temporary wrapper directory");
+        json
+    };
+
+    assert_eq!(make(), make());
+}
+
+#[test]
 fn linux_event_loop_wrapper_extracts_combined_surface_when_headers_exist() {
     let headers = [
         "/usr/include/sys/epoll.h",
