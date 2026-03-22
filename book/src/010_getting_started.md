@@ -1,5 +1,18 @@
 # Getting Started
 
+This chapter is the shortest path from raw C source or headers to a PARC-owned
+source artifact.
+
+Read `parc` as the source frontend of the toolchain:
+
+- `parc` owns preprocessing, parsing, extraction, and source diagnostics
+- `linc` owns link and binary evidence
+- `gec` owns Rust lowering and emitted build output
+
+The boundary rule is strict: `parc/src/**` must not depend on `linc` or `gec`,
+and any cross-package translation belongs only in tests, examples, or external
+harnesses.
+
 ## Add the crate
 
 ```toml
@@ -9,7 +22,7 @@ parc = { path = "../pac" }
 
 ## Pick the right API first
 
-Use `parc::driver` when you have a file on disk and want PAC to run a system preprocessor first.
+Use `parc::driver` when you have a file on disk and want PARC to run a system preprocessor first.
 
 ```rust
 use parc::driver::{parse, Config};
@@ -38,7 +51,7 @@ fn main() {
 
 ## Choose a language flavor
 
-PAC supports three parser modes:
+PARC supports three parser modes:
 
 | Flavor | Meaning |
 | --- | --- |
