@@ -29,6 +29,8 @@ These are the first surfaces that should stay green on every machine:
 - vendored musl `stdint`
 - vendored zlib
 - vendored libpng builtin-preprocessor success path
+- repo-owned `macro_env_a` hostile macro corpus
+- repo-owned `type_env_b` hostile type corpus
 - parser and extraction corpus fixtures under `src/tests/**`
 
 These matter because they exercise:
@@ -56,9 +58,12 @@ These prove that PARC is refusing or degrading honestly instead of pretending to
 understand everything:
 
 - hostile declaration fixtures
+- repo-owned hostile corpora that force builtin-preprocessor macro and typedef expansion
 - recovery fixtures
 - unsupported or partial declaration families that still emit diagnostics and
   partial metadata
+- extraction-status summaries that distinguish supported, partial, and
+  unsupported output trust
 
 For release purposes, these failures are good when they are:
 
@@ -73,6 +78,8 @@ The most important repeat-run anchors right now are:
 - vendored musl scan
 - vendored zlib scan
 - vendored libpng scan
+- `macro_env_a` scan
+- `type_env_b` scan
 - OpenSSL wrapper extraction
 - combined Linux event-loop wrapper extraction
 

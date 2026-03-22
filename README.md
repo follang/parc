@@ -121,12 +121,18 @@ The current hardening ladder is easiest to read in four buckets:
   - Linux combined event-loop wrapper extraction
 - hostile and degraded surfaces
   - hostile declaration fixtures
+  - repo-owned `macro_env_a` hostile macro corpus
+  - repo-owned `type_env_b` hostile type corpus
   - resilient recovery fixtures
   - explicit preprocess failure matrix
   - explicit source refusal and recovery matrix
+  - extraction-status summaries that distinguish supported, partial, and unsupported surfaces
 - determinism anchors
   - vendored musl scan
+  - vendored zlib scan
   - vendored libpng scan
+  - `macro_env_a` scan
+  - `type_env_b` scan
   - OpenSSL wrapper extraction
   - combined Linux event-loop wrapper extraction
 
@@ -143,6 +149,7 @@ system header family is equally mature.
 - at least one vendored large-header scan target
 - at least one combined system-header target
 - deterministic repeated extraction on canonical large surfaces
+- deterministic repeated extraction on repo-owned hostile corpora
 
 The current canonical frontend surfaces are:
 
