@@ -4,6 +4,7 @@ mod determinism;
 mod differential;
 mod external_tools;
 mod extraction_fixtures;
+mod failure_matrix_preprocess;
 mod full_apps;
 mod hostile_headers;
 mod parse_api;
