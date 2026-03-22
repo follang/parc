@@ -5,13 +5,38 @@
 PARC is the source-meaning layer of the pipeline: preprocessing, parsing,
 header scanning, and source-level semantic extraction.
 
-In the intended repository architecture, `parc` owns source meaning only.
+In the intended architecture:
 
-- `parc` library code does not depend on `linc` or `gec`
-- `parc` emits a PARC-owned source artifact
-- downstream crates may consume that artifact only in tests, examples, or
-  external harnesses
-- there is no shared ABI crate and no library-level cross-package adapter
+- `parc` owns source meaning
+- `linc` owns link and binary meaning
+- `gec` owns Rust lowering and emitted build metadata
+
+Those roles are intentionally separate. `parc` is not a link analyzer and not
+a Rust generator.
+
+## Architectural Rules
+
+`parc` owns its own source model and its own source artifacts.
+
+- `parc/src/**` must not depend on `linc` or `gec`
+- cross-package translation belongs only in tests, examples, or external harnesses
+- there is no shared ABI crate
+- there is no backward-compatibility burden for discarded pipeline shapes
+
+## Responsibilities
+
+- preprocessing C source and headers
+- parsing translation units and source fragments
+- extracting normalized source declarations
+- preserving source diagnostics and provenance
+- emitting source artifacts for downstream translation
+
+## Non-responsibilities
+
+- symbol inventory
+- binary validation
+- native link planning
+- Rust lowering or code generation
 
 ```rust
 use parc::driver::{Config, parse};
@@ -22,15 +47,14 @@ fn main() {
 }
 ```
 
-# Bugs
+## Core Workflow
 
-Just open an issue, bug reports and patches are most welcome.
+```rust
+use parc::driver::{Config, parse};
 
-## License
-
-Dual-licenced under Apache 2.0 or MIT licenses (see `LICENSE-APACHE` and `LICENSE-MIT` for legal terms).
-
-## Development
+let parsed = parse(&Config::default(), "example.c").unwrap();
+println!("items: {}", parsed.unit.0.len());
+```
 
 ## Artifact Boundary
 
@@ -59,6 +83,34 @@ Never in `parc/src/**`.
 
 That rule is the main architectural guarantee: `parc` produces source
 artifacts, but it does not own downstream link or generation concerns.
+
+## Tested Scope
+
+The suite exercises:
+
+- parser and preprocessor unit coverage
+- source-contract and consumability tests
+- large fixture corpora, including hostile headers and full-app fixtures
+- deterministic source-artifact serialization
+
+The tests are the main statement of supported behavior.
+
+## Build And Test
+
+```sh
+make build
+make test
+```
+
+## Bugs
+
+Just open an issue, bug reports and patches are most welcome.
+
+## License
+
+Dual-licenced under Apache 2.0 or MIT licenses (see `LICENSE-APACHE` and `LICENSE-MIT` for legal terms).
+
+## Development
 
 The parser implementation lives under `src/parser/` and is maintained directly in Rust.
 There is no external PEG generation step in the build anymore.
