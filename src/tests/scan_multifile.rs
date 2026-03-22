@@ -265,6 +265,28 @@ fn scan_vendored_musl_stdint_headers() {
     assert!(result.preprocessed_source.contains("uint64_t"));
 }
 
+#[test]
+fn scan_vendored_libpng_headers() {
+    let root = vendored_root("libpng");
+    let include_dir = root.join("include");
+    let entry = root.join("main.c");
+
+    let result = scan_headers(
+        &ScanConfig::new()
+            .entry_header(&entry)
+            .include_dir(&include_dir)
+            .with_builtin_preprocessor(),
+    );
+
+    let err = result.expect_err("vendored libpng scan should currently fail conservatively");
+    let msg = format!("{err:?}");
+
+    assert!(msg.contains("PreprocessorError"));
+    assert!(msg.contains("libpng requires 8-bit bytes"));
+    assert!(msg.contains("libpng requires a signed 16-bit type"));
+    assert!(msg.contains("libpng requires an unsigned 32-bit (or more) type"));
+}
+
 // --- Defines controlling ifdef ---
 
 #[test]

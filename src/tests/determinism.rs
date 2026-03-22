@@ -78,6 +78,27 @@ fn determinism_vendored_musl_scan() {
     assert_eq!(make(), make());
 }
 
+#[test]
+fn determinism_vendored_libpng_scan() {
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("test/full_apps/external/libpng/header");
+    let include_dir = root.join("include");
+    let entry = root.join("main.c");
+
+    let make = || {
+        let err = scan_headers(
+            &ScanConfig::new()
+                .entry_header(&entry)
+                .include_dir(&include_dir)
+                .with_builtin_preprocessor(),
+        )
+        .expect_err("vendored libpng scan should currently fail conservatively");
+        format!("{err:?}")
+    };
+
+    assert_eq!(make(), make());
+}
+
 // --- JSON transport ---
 
 #[test]
