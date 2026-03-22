@@ -130,7 +130,7 @@ impl<'a> ExprParser<'a> {
         None
     }
 
-    fn ternary(&mut self) -> i64 {
+    fn ternary(&mut self) -> i128 {
         let cond = self.logical_or();
         if self.peek().map_or(false, |t| t.text == "?") {
             self.advance(); // skip ?
@@ -149,7 +149,7 @@ impl<'a> ExprParser<'a> {
         }
     }
 
-    fn logical_or(&mut self) -> i64 {
+    fn logical_or(&mut self) -> i128 {
         let mut val = self.logical_and();
         while self.peek_text() == "||" {
             self.advance();
@@ -159,7 +159,7 @@ impl<'a> ExprParser<'a> {
         val
     }
 
-    fn logical_and(&mut self) -> i64 {
+    fn logical_and(&mut self) -> i128 {
         let mut val = self.bitwise_or();
         while self.peek_text() == "&&" {
             self.advance();
@@ -169,7 +169,7 @@ impl<'a> ExprParser<'a> {
         val
     }
 
-    fn bitwise_or(&mut self) -> i64 {
+    fn bitwise_or(&mut self) -> i128 {
         let mut val = self.bitwise_xor();
         while self.peek_text() == "|" && !self.peek_text_is("||") {
             self.advance();
@@ -178,7 +178,7 @@ impl<'a> ExprParser<'a> {
         val
     }
 
-    fn bitwise_xor(&mut self) -> i64 {
+    fn bitwise_xor(&mut self) -> i128 {
         let mut val = self.bitwise_and();
         while self.peek_text() == "^" {
             self.advance();
@@ -187,7 +187,7 @@ impl<'a> ExprParser<'a> {
         val
     }
 
-    fn bitwise_and(&mut self) -> i64 {
+    fn bitwise_and(&mut self) -> i128 {
         let mut val = self.equality();
         while self.peek_text() == "&" && !self.peek_text_is("&&") {
             self.advance();
@@ -196,7 +196,7 @@ impl<'a> ExprParser<'a> {
         val
     }
 
-    fn equality(&mut self) -> i64 {
+    fn equality(&mut self) -> i128 {
         let mut val = self.relational();
         loop {
             let op = self.peek_text().to_owned();
@@ -215,7 +215,7 @@ impl<'a> ExprParser<'a> {
         val
     }
 
-    fn relational(&mut self) -> i64 {
+    fn relational(&mut self) -> i128 {
         let mut val = self.shift();
         loop {
             let op = self.peek_text().to_owned();
@@ -242,7 +242,7 @@ impl<'a> ExprParser<'a> {
         val
     }
 
-    fn shift(&mut self) -> i64 {
+    fn shift(&mut self) -> i128 {
         let mut val = self.additive();
         loop {
             let op = self.peek_text().to_owned();
@@ -261,7 +261,7 @@ impl<'a> ExprParser<'a> {
         val
     }
 
-    fn additive(&mut self) -> i64 {
+    fn additive(&mut self) -> i128 {
         let mut val = self.multiplicative();
         loop {
             let op = self.peek_text().to_owned();
@@ -280,7 +280,7 @@ impl<'a> ExprParser<'a> {
         val
     }
 
-    fn multiplicative(&mut self) -> i64 {
+    fn multiplicative(&mut self) -> i128 {
         let mut val = self.unary();
         loop {
             let op = self.peek_text().to_owned();
@@ -305,7 +305,7 @@ impl<'a> ExprParser<'a> {
         val
     }
 
-    fn unary(&mut self) -> i64 {
+    fn unary(&mut self) -> i128 {
         let op = self.peek_text().to_owned();
         match op.as_str() {
             "!" => {
@@ -332,7 +332,7 @@ impl<'a> ExprParser<'a> {
         }
     }
 
-    fn primary(&mut self) -> i64 {
+    fn primary(&mut self) -> i128 {
         if self.peek_text() == "(" {
             self.advance(); // skip (
             let val = self.ternary();
@@ -364,20 +364,20 @@ impl<'a> ExprParser<'a> {
     }
 }
 
-fn parse_integer(s: &str) -> i64 {
+fn parse_integer(s: &str) -> i128 {
     let s = s.trim_end_matches(|c: char| c == 'u' || c == 'U' || c == 'l' || c == 'L');
     if s.starts_with("0x") || s.starts_with("0X") {
-        i64::from_str_radix(&s[2..], 16).unwrap_or(0)
+        i128::from_str_radix(&s[2..], 16).unwrap_or(0)
     } else if s.starts_with("0b") || s.starts_with("0B") {
-        i64::from_str_radix(&s[2..], 2).unwrap_or(0)
+        i128::from_str_radix(&s[2..], 2).unwrap_or(0)
     } else if s.starts_with('0') && s.len() > 1 && s.chars().all(|c| c.is_ascii_digit()) {
-        i64::from_str_radix(&s[1..], 8).unwrap_or(0)
+        i128::from_str_radix(&s[1..], 8).unwrap_or(0)
     } else {
         s.parse().unwrap_or(0)
     }
 }
 
-fn parse_char_constant(s: &str) -> i64 {
+fn parse_char_constant(s: &str) -> i128 {
     // Strip quotes
     let inner = &s[1..s.len() - 1];
     if inner.starts_with('\\') {
@@ -386,13 +386,13 @@ fn parse_char_constant(s: &str) -> i64 {
             Some('t') => 9,
             Some('r') => 13,
             Some('0') => 0,
-            Some('\\') => b'\\' as i64,
-            Some('\'') => b'\'' as i64,
-            Some(c) => c as i64,
+            Some('\\') => b'\\' as i128,
+            Some('\'') => b'\'' as i128,
+            Some(c) => c as i128,
             None => 0,
         }
     } else {
-        inner.chars().next().map_or(0, |c| c as i64)
+        inner.chars().next().map_or(0, |c| c as i128)
     }
 }
 
@@ -500,5 +500,24 @@ mod tests {
     #[test]
     fn test_char_constant() {
         assert!(eval("'A' == 65"));
+    }
+
+    #[test]
+    fn test_suffix_and_large_limit_literals() {
+        assert!(eval("4294967295U > 2147483647"));
+        assert!(eval("18446744073709551615ULL > 0"));
+        assert!(eval("0xffffffffffffffffULL == 18446744073709551615ULL"));
+    }
+
+    #[test]
+    fn test_negative_limit_style_literals() {
+        assert!(eval("(-9223372036854775807LL - 1LL) < 0"));
+        assert!(eval("(-2147483647 - 1) < 0"));
+    }
+
+    #[test]
+    fn test_mixed_suffix_arithmetic_and_shift() {
+        assert!(eval("(1UL << 31) == 2147483648UL"));
+        assert!(eval("(0xffU & 0xf0U) == 0xf0U"));
     }
 }
