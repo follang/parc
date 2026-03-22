@@ -5,6 +5,7 @@
 
 use crate::extract;
 use crate::ir::*;
+use crate::scan::{scan_headers, ScanConfig};
 
 // --- Deterministic extraction ---
 
@@ -54,6 +55,27 @@ fn determinism_across_flavors_same_source() {
     )
     .unwrap();
     assert_eq!(j1, j2);
+}
+
+#[test]
+fn determinism_vendored_musl_scan() {
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("test/full_apps/external/musl/stdint");
+    let include_dir = root.join("include");
+    let entry = include_dir.join("stdint.h");
+
+    let make = || {
+        let result = scan_headers(
+            &ScanConfig::new()
+                .entry_header(&entry)
+                .include_dir(&include_dir)
+                .with_builtin_preprocessor(),
+        )
+        .expect("vendored musl stdint scan should succeed");
+        serde_json::to_string(&result.package).expect("package json")
+    };
+
+    assert_eq!(make(), make());
 }
 
 // --- JSON transport ---
