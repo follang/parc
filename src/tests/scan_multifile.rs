@@ -16,6 +16,13 @@ fn cleanup(dir: &std::path::Path) {
     let _ = std::fs::remove_dir_all(dir);
 }
 
+fn vendored_root(name: &str) -> std::path::PathBuf {
+    std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("test/full_apps/external")
+        .join(name)
+        .join("header")
+}
+
 // --- Include chain: A includes B includes C ---
 
 #[test]
@@ -203,6 +210,33 @@ typedef int status_t;
     assert!(pkg.find_function("func_b").is_some());
 
     cleanup(&dir);
+}
+
+// --- Vendored real library headers ---
+
+#[test]
+fn scan_vendored_zlib_headers_fail_conservatively() {
+    let root = vendored_root("zlib");
+    let include_dir = root.join("include");
+    let entry = include_dir.join("zlib.h");
+
+    let result = scan_headers(
+        &ScanConfig::new()
+            .entry_header(&entry)
+            .include_dir(&include_dir)
+            .with_builtin_preprocessor(),
+    )
+    .expect("vendored zlib scan should succeed");
+    let pkg = &result.package;
+
+    assert_eq!(pkg.item_count(), 0);
+    assert!(pkg.has_diagnostics());
+    assert!(pkg
+        .diagnostics
+        .iter()
+        .any(|diag| diag.kind == DiagnosticKind::ParseFailed));
+    assert!(result.preprocessed_source.contains("deflate"));
+    assert!(result.preprocessed_source.contains("z_stream"));
 }
 
 // --- Defines controlling ifdef ---
