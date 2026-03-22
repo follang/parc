@@ -35,7 +35,7 @@
             const path_to_root = "";
             const default_light_theme = "navy";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-107bc103.js";
+            window.path_to_searchindex_js = "searchindex-7851b8d0.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-faeb9e03.js"></script>
@@ -175,6 +175,14 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="testing"><a class="header" href="#testing">Testing</a></h1>
+<p><code>parc</code> is the source-meaning crate in the toolchain, so its tests should prove
+three things:</p>
+<ul>
+<li>the frontend accepts or rejects source as intended</li>
+<li>the extracted <code>SourcePackage</code> contract carries the intended meaning</li>
+<li>cross-package composition can start from <code>parc</code> artifacts without relying on
+<code>parc</code> internals</li>
+</ul>
 <p>PAC has two broad testing layers:</p>
 <ul>
 <li>direct parser/API tests in <code>src/tests</code></li>
@@ -190,6 +198,17 @@ make test
 <li><code>cargo build --release</code></li>
 <li><code>cargo test</code></li>
 </ul>
+<h2 id="contract-tests"><a class="header" href="#contract-tests">Contract tests</a></h2>
+<p>Contract tests are the tests a downstream toolchain should treat as the main
+statement of support:</p>
+<ul>
+<li><code>parse_api</code> tests for direct parser entry points</li>
+<li>extraction tests for declaration/source modeling</li>
+<li>scan tests for preprocessing and multi-file source intake</li>
+<li>consumability tests for the <code>SourcePackage</code> artifact</li>
+</ul>
+<p>If one of those changes meaningfully, the corresponding book chapter should
+change in the same patch.</p>
 <h2 id="parse-api-tests"><a class="header" href="#parse-api-tests">Parse API tests</a></h2>
 <p><code>src/tests/parse_api.rs</code> checks the public <code>parse</code> entry points directly.</p>
 <p>Examples covered in the repository include:</p>
@@ -271,7 +290,7 @@ structs, extreme enum values, forward-then-define patterns, etc.</p>
 <h2 id="recovery-tests"><a class="header" href="#recovery-tests">Recovery tests</a></h2>
 <p><code>src/tests/recovery.rs</code> tests graceful handling of broken, incomplete, or unusual input.
 Uses both strict parsing (error expected) and resilient parsing (recovery expected).</p>
-<h2 id="contract-tests"><a class="header" href="#contract-tests">Contract tests</a></h2>
+<h2 id="contract-tests-1"><a class="header" href="#contract-tests-1">Contract tests</a></h2>
 <p><code>src/tests/contract.rs</code> and <code>src/tests/consumability.rs</code> verify that the <code>SourcePackage</code>
 contract is sufficient for downstream consumers. These test iteration patterns, type
 navigation, serialization, filtering, merging, and programmatic construction.</p>
@@ -293,6 +312,30 @@ guards, include directory resolution, and metadata population.</p>
 <li>Add a scan test if preprocessing or multi-file behavior matters</li>
 <li>Add a full-app fixture if the case needs a full filesystem layout</li>
 </ol>
+<h2 id="cross-crate-integration-proof"><a class="header" href="#cross-crate-integration-proof">Cross-crate integration proof</a></h2>
+<p><code>parc</code> library tests should not import <code>linc</code> or <code>gerc</code>.</p>
+<p>Cross-crate proof belongs in:</p>
+<ul>
+<li><code>linc</code> tests/examples that ingest serialized or translated <code>parc</code> artifacts</li>
+<li><code>gerc</code> tests/examples that ingest translated source artifacts</li>
+<li>external harnesses that exercise the full toolchain</li>
+</ul>
+<p>That keeps <code>parc</code>’s own test suite focused on source meaning while still
+proving the larger pipeline elsewhere.</p>
+<h2 id="what-supported-means"><a class="header" href="#what-supported-means">What “supported” means</a></h2>
+<p>For <code>parc</code>, support means:</p>
+<ul>
+<li>the syntax path is covered by parser-facing tests</li>
+<li>the extracted source meaning is covered by <code>SourcePackage</code>-level tests</li>
+<li>the relevant limitations are documented honestly when behavior is partial or
+conservative</li>
+</ul>
+<p>It does not mean:</p>
+<ul>
+<li>every downstream consumer will accept the artifact unchanged</li>
+<li>every hostile system header already has perfect preprocessing coverage</li>
+<li>every parser-internal helper is part of the public contract</li>
+</ul>
 
                     </main>
 

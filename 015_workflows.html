@@ -35,7 +35,7 @@
             const path_to_root = "";
             const default_light_theme = "navy";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-107bc103.js";
+            window.path_to_searchindex_js = "searchindex-7851b8d0.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-faeb9e03.js"></script>
@@ -177,6 +177,12 @@
                         <h1 id="common-workflows"><a class="header" href="#common-workflows">Common Workflows</a></h1>
 <p>Most confusion with PAC comes from choosing the wrong entry point. This chapter maps common tasks to
 the right API.</p>
+<p>Read the workflows in this order:</p>
+<ol>
+<li>prefer source/frontend workflows that stay inside <code>parc</code></li>
+<li>serialize <code>SourcePackage</code> when another tool needs the result</li>
+<li>keep any cross-package translation in tests, examples, or external harnesses</li>
+</ol>
 <h2 id="workflow-selection"><a class="header" href="#workflow-selection">Workflow selection</a></h2>
 <div class="table-wrapper">
 <table>
@@ -300,6 +306,7 @@ println!("{}", out);
 <li>If preprocessing matters, start with <code>driver</code>.</li>
 <li>If you already have plain text in memory, start with <code>parse</code>.</li>
 <li>If you need diagnostics tied back to original files, keep the preprocessed source string.</li>
+<li>If another crate needs PARC output, stop at <code>SourcePackage</code> and translate it outside <code>parc/src/**</code>.</li>
 </ul>
 
                     </main>

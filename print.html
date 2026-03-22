@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "navy";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-107bc103.js";
+            window.path_to_searchindex_js = "searchindex-7851b8d0.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-faeb9e03.js"></script>
@@ -181,7 +181,7 @@ parsing, and source-level semantic extraction. It targets C11 and can
 optionally accept GNU and Clang extensions.</p>
 <p>PARC produces a durable <code>SourcePackage</code> contract suitable for downstream
 consumption by linker and codegen stages.</p>
-<h2 id="what-parc-gives-you"><a class="header" href="#what-parc-gives-you">What PARC gives you</a></h2>
+<h2 id="what-parc-owns"><a class="header" href="#what-parc-owns">What PARC Owns</a></h2>
 <ul>
 <li><strong>Preprocessing</strong>: built-in C preprocessor with macro expansion, conditionals, and includes</li>
 <li><strong>Parsing</strong>: C11 parser producing a typed AST under <code>parc::ast</code></li>
@@ -193,7 +193,14 @@ consumption by linker and codegen stages.</p>
 <li>Recursive visitor API under <code>parc::visit</code></li>
 <li>Tree-style debug printer under <code>parc::print</code></li>
 </ul>
-<h2 id="pipeline"><a class="header" href="#pipeline">Pipeline</a></h2>
+<h2 id="what-parc-does-not-own"><a class="header" href="#what-parc-does-not-own">What PARC Does Not Own</a></h2>
+<ul>
+<li>native symbol inspection</li>
+<li>binary validation</li>
+<li>link-plan construction</li>
+<li>Rust lowering or emission</li>
+</ul>
+<h2 id="data-flow"><a class="header" href="#data-flow">Data flow</a></h2>
 <pre><code class="language-text">C source / headers
   -&gt; preprocessor (built-in or gcc/clang)
   -&gt; PARC parser
@@ -201,7 +208,7 @@ consumption by linker and codegen stages.</p>
   -&gt; SourcePackage (frontend contract)
   -&gt; downstream (LINC, GERC)
 </code></pre>
-<h2 id="public-modules"><a class="header" href="#public-modules">Public modules</a></h2>
+<h2 id="module-layout"><a class="header" href="#module-layout">Module layout</a></h2>
 <div class="table-wrapper">
 <table>
 <thead>
@@ -223,6 +230,14 @@ consumption by linker and codegen stages.</p>
 </tbody>
 </table>
 </div>
+<h2 id="artifact-boundary"><a class="header" href="#artifact-boundary">Artifact boundary</a></h2>
+<p><code>parc</code> owns source meaning only.</p>
+<p>The <code>SourcePackage</code> boundary is where <code>parc</code> stops:</p>
+<ul>
+<li><code>parc/src/**</code> must not depend on <code>linc</code> or <code>gec</code></li>
+<li>downstream translation belongs only in tests, examples, or external harnesses</li>
+<li><code>parc</code> does not own link or generation concerns</li>
+</ul>
 <h2 id="typical-use-cases"><a class="header" href="#typical-use-cases">Typical use cases</a></h2>
 <ul>
 <li>Extract function/struct/enum declarations from C headers</li>
@@ -242,12 +257,23 @@ consumption by linker and codegen stages.</p>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="getting-started"><a class="header" href="#getting-started">Getting Started</a></h1>
+<p>This chapter is the shortest path from raw C source or headers to a PARC-owned
+source artifact.</p>
+<p>Read <code>parc</code> as the source frontend of the toolchain:</p>
+<ul>
+<li><code>parc</code> owns preprocessing, parsing, extraction, and source diagnostics</li>
+<li><code>linc</code> owns link and binary evidence</li>
+<li><code>gec</code> owns Rust lowering and emitted build output</li>
+</ul>
+<p>The boundary rule is strict: <code>parc/src/**</code> must not depend on <code>linc</code> or <code>gec</code>,
+and any cross-package translation belongs only in tests, examples, or external
+harnesses.</p>
 <h2 id="add-the-crate"><a class="header" href="#add-the-crate">Add the crate</a></h2>
 <pre><code class="language-toml">[dependencies]
 parc = { path = "../pac" }
 </code></pre>
 <h2 id="pick-the-right-api-first"><a class="header" href="#pick-the-right-api-first">Pick the right API first</a></h2>
-<p>Use <code>parc::driver</code> when you have a file on disk and want PAC to run a system preprocessor first.</p>
+<p>Use <code>parc::driver</code> when you have a file on disk and want PARC to run a system preprocessor first.</p>
 <pre class="playground"><code class="language-rust">use parc::driver::{parse, Config};
 
 fn main() -&gt; Result&lt;(), parc::driver::Error&gt; {
@@ -267,7 +293,7 @@ fn main() {
     println!("{:#?}", expr);
 }</code></pre>
 <h2 id="choose-a-language-flavor"><a class="header" href="#choose-a-language-flavor">Choose a language flavor</a></h2>
-<p>PAC supports three parser modes:</p>
+<p>PARC supports three parser modes:</p>
 <div class="table-wrapper">
 <table>
 <thead>
@@ -324,10 +350,36 @@ fn main() {
 <li><a href="#driver-api">Driver API</a> for preprocessing and file-based parsing</li>
 <li><a href="#parser-api">Parser API</a> for fragment parsing</li>
 </ul>
+<h2 id="architectural-boundary"><a class="header" href="#architectural-boundary">Architectural boundary</a></h2>
+<p><code>parc</code> is the source frontend.</p>
+<p>It owns:</p>
+<ul>
+<li>preprocessing</li>
+<li>parsing</li>
+<li>source extraction</li>
+<li>source diagnostics</li>
+<li>the <code>parc::ir::SourcePackage</code> artifact</li>
+</ul>
+<p>It does not own:</p>
+<ul>
+<li>symbol inventory</li>
+<li>binary validation</li>
+<li>link planning</li>
+<li>Rust code generation</li>
+</ul>
+<p>In this repository, cross-package composition should not live in <code>parc</code> library
+code. <code>linc</code> and <code>gec</code> should consume <code>parc</code> output only from tests, examples,
+or external harnesses.</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="common-workflows"><a class="header" href="#common-workflows">Common Workflows</a></h1>
 <p>Most confusion with PAC comes from choosing the wrong entry point. This chapter maps common tasks to
 the right API.</p>
+<p>Read the workflows in this order:</p>
+<ol>
+<li>prefer source/frontend workflows that stay inside <code>parc</code></li>
+<li>serialize <code>SourcePackage</code> when another tool needs the result</li>
+<li>keep any cross-package translation in tests, examples, or external harnesses</li>
+</ol>
 <h2 id="workflow-selection"><a class="header" href="#workflow-selection">Workflow selection</a></h2>
 <div class="table-wrapper">
 <table>
@@ -451,6 +503,7 @@ println!("{}", out);
 <li>If preprocessing matters, start with <code>driver</code>.</li>
 <li>If you already have plain text in memory, start with <code>parse</code>.</li>
 <li>If you need diagnostics tied back to original files, keep the preprocessed source string.</li>
+<li>If another crate needs PARC output, stop at <code>SourcePackage</code> and translate it outside <code>parc/src/**</code>.</li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="driver-api"><a class="header" href="#driver-api">Driver API</a></h1>
@@ -1431,6 +1484,14 @@ if let Some(first) = parsed.unit.0.first() {
 feeding results into another tool that expects a different coordinate system, convert explicitly.</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="testing"><a class="header" href="#testing">Testing</a></h1>
+<p><code>parc</code> is the source-meaning crate in the toolchain, so its tests should prove
+three things:</p>
+<ul>
+<li>the frontend accepts or rejects source as intended</li>
+<li>the extracted <code>SourcePackage</code> contract carries the intended meaning</li>
+<li>cross-package composition can start from <code>parc</code> artifacts without relying on
+<code>parc</code> internals</li>
+</ul>
 <p>PAC has two broad testing layers:</p>
 <ul>
 <li>direct parser/API tests in <code>src/tests</code></li>
@@ -1446,6 +1507,17 @@ make test
 <li><code>cargo build --release</code></li>
 <li><code>cargo test</code></li>
 </ul>
+<h2 id="contract-tests"><a class="header" href="#contract-tests">Contract tests</a></h2>
+<p>Contract tests are the tests a downstream toolchain should treat as the main
+statement of support:</p>
+<ul>
+<li><code>parse_api</code> tests for direct parser entry points</li>
+<li>extraction tests for declaration/source modeling</li>
+<li>scan tests for preprocessing and multi-file source intake</li>
+<li>consumability tests for the <code>SourcePackage</code> artifact</li>
+</ul>
+<p>If one of those changes meaningfully, the corresponding book chapter should
+change in the same patch.</p>
 <h2 id="parse-api-tests"><a class="header" href="#parse-api-tests">Parse API tests</a></h2>
 <p><code>src/tests/parse_api.rs</code> checks the public <code>parse</code> entry points directly.</p>
 <p>Examples covered in the repository include:</p>
@@ -1527,7 +1599,7 @@ structs, extreme enum values, forward-then-define patterns, etc.</p>
 <h2 id="recovery-tests"><a class="header" href="#recovery-tests">Recovery tests</a></h2>
 <p><code>src/tests/recovery.rs</code> tests graceful handling of broken, incomplete, or unusual input.
 Uses both strict parsing (error expected) and resilient parsing (recovery expected).</p>
-<h2 id="contract-tests"><a class="header" href="#contract-tests">Contract tests</a></h2>
+<h2 id="contract-tests-1"><a class="header" href="#contract-tests-1">Contract tests</a></h2>
 <p><code>src/tests/contract.rs</code> and <code>src/tests/consumability.rs</code> verify that the <code>SourcePackage</code>
 contract is sufficient for downstream consumers. These test iteration patterns, type
 navigation, serialization, filtering, merging, and programmatic construction.</p>
@@ -1549,6 +1621,30 @@ guards, include directory resolution, and metadata population.</p>
 <li>Add a scan test if preprocessing or multi-file behavior matters</li>
 <li>Add a full-app fixture if the case needs a full filesystem layout</li>
 </ol>
+<h2 id="cross-crate-integration-proof"><a class="header" href="#cross-crate-integration-proof">Cross-crate integration proof</a></h2>
+<p><code>parc</code> library tests should not import <code>linc</code> or <code>gerc</code>.</p>
+<p>Cross-crate proof belongs in:</p>
+<ul>
+<li><code>linc</code> tests/examples that ingest serialized or translated <code>parc</code> artifacts</li>
+<li><code>gerc</code> tests/examples that ingest translated source artifacts</li>
+<li>external harnesses that exercise the full toolchain</li>
+</ul>
+<p>That keeps <code>parc</code>’s own test suite focused on source meaning while still
+proving the larger pipeline elsewhere.</p>
+<h2 id="what-supported-means"><a class="header" href="#what-supported-means">What “supported” means</a></h2>
+<p>For <code>parc</code>, support means:</p>
+<ul>
+<li>the syntax path is covered by parser-facing tests</li>
+<li>the extracted source meaning is covered by <code>SourcePackage</code>-level tests</li>
+<li>the relevant limitations are documented honestly when behavior is partial or
+conservative</li>
+</ul>
+<p>It does not mean:</p>
+<ul>
+<li>every downstream consumer will accept the artifact unchanged</li>
+<li>every hostile system header already has perfect preprocessing coverage</li>
+<li>every parser-internal helper is part of the public contract</li>
+</ul>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="diagnostics-and-printing"><a class="header" href="#diagnostics-and-printing">Diagnostics And Printing</a></h1>
 <p>PAC includes two pieces that are especially useful when building tools on top of the parser:</p>
@@ -1754,10 +1850,13 @@ prefer the consumer-facing modules unless the chapter is specifically contributo
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="api-contract"><a class="header" href="#api-contract">API Contract</a></h1>
 <p>This chapter records the intended public consumer surface of <code>parc</code>.</p>
-<p>It is not a blanket promise about every future change. It is the current explicit guidance for how
-downstream tools should integrate with the crate without depending on internal parser details.</p>
+<p>It is not a blanket promise about every future change. It is the current
+guidance for how downstream tools should integrate with the crate without
+depending on parser internals or accidentally turning <code>parc</code> into a shared ABI
+owner for the rest of the pipeline.</p>
 <h2 id="first-principle"><a class="header" href="#first-principle">First Principle</a></h2>
-<p><code>parc</code> is a C language frontend: preprocessing, parsing, and source-level semantic extraction.</p>
+<p><code>parc</code> is the source-meaning layer of the pipeline: preprocessing, parsing, and
+source-level semantic extraction.</p>
 <p>The intended downstream pattern is:</p>
 <ol>
 <li>scan headers or parse source via <code>driver</code>, <code>scan</code>, or <code>parse</code></li>
@@ -1765,7 +1864,17 @@ downstream tools should integrate with the crate without depending on internal p
 <li>consume the <code>SourcePackage</code> IR from <code>ir</code></li>
 <li>use <code>visit</code>, <code>span</code>, and <code>loc</code> to analyze AST-level details if needed</li>
 </ol>
-<p>Downstream consumers (LINC, GERC) should depend on <code>parc::ir</code>, not on <code>parc::ast</code> directly.</p>
+<p>Downstream consumers should depend on <code>parc::ir</code>, not on <code>parc::ast</code> directly.</p>
+<p>More importantly for this repository:</p>
+<ul>
+<li><code>parc</code> library code must not depend on <code>linc</code> or <code>gec</code></li>
+<li><code>linc</code> and <code>gec</code> should not require <code>parc</code> as a library dependency in their
+production code paths</li>
+<li>integration should happen through PARC-owned artifacts in tests/examples or
+external harnesses</li>
+<li>there is no shared ABI crate that all three libraries depend on</li>
+<li>there is no obligation to preserve discarded pipeline shapes for backward compatibility</li>
+</ul>
 <h2 id="preferred-public-surface"><a class="header" href="#preferred-public-surface">Preferred public surface</a></h2>
 <p>These are the main consumer-facing modules:</p>
 <div class="table-wrapper">
@@ -1804,11 +1913,13 @@ implementation details rather than the intended library boundary.</p>
 <ol>
 <li>use <code>driver</code> when preprocessing matters</li>
 <li>use <code>parse::*</code> for fragment parsing or already-controlled text inputs</li>
-<li>treat <code>ast</code> types as the primary output contract</li>
+<li>treat <code>ir::SourcePackage</code> as the primary output contract</li>
 <li>use <code>visit</code> for traversal instead of hand-rolling recursive descent everywhere</li>
 <li>use <code>span</code> and <code>loc</code> for diagnostics rather than guessing source positions</li>
 <li>do not rely on exact error-message strings for durable control flow</li>
 <li>do not treat PAC as semantic analysis, type checking, or ABI proof</li>
+<li>if another crate needs PARC output, serialize the PARC-owned artifact and
+translate it outside library code</li>
 </ol>
 <h2 id="what-is-part-of-the-practical-contract"><a class="header" href="#what-is-part-of-the-practical-contract">What is part of the practical contract</a></h2>
 <p>Today the strongest practical contract is:</p>
@@ -1845,7 +1956,7 @@ contract.</p>
 <li>full support for every GCC or Clang extension</li>
 <li>preservation of raw macro definitions beyond what <code>capture_macros</code> provides</li>
 </ul>
-<p>Those are outside the scope of PAC as a parser library.</p>
+<p>Those are outside the scope of PARC as a source frontend.</p>
 <h2 id="downstream-posture"><a class="header" href="#downstream-posture">Downstream posture</a></h2>
 <p>For long-lived integrations, the safest posture is:</p>
 <ol>
@@ -1854,6 +1965,7 @@ contract.</p>
 <li>use <code>driver</code> and <code>parse</code> only when you need AST-level access</li>
 <li>treat unsupported syntax and parser errors as normal outcomes</li>
 <li>keep tests with representative preprocessed inputs for the syntax families you depend on</li>
+<li>keep cross-package translation in tests/examples/harnesses rather than adding library dependencies</li>
 <li>see <a href="#migration-from-bic">Migration From bic</a> if you are transitioning from <code>bic</code></li>
 </ol>
 <div style="break-before: page; page-break-before: always;"></div>
@@ -2382,7 +2494,7 @@ traversal method.</p>
 <p>That makes the analysis easier to maintain as the AST evolves.</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="contributor-workflow-1"><a class="header" href="#contributor-workflow-1">Contributor Workflow</a></h1>
-<p>This chapter records a practical workflow for changing PAC safely.</p>
+<p>This chapter records a practical workflow for changing <code>parc</code> safely.</p>
 <h2 id="smallest-reproducer-rule"><a class="header" href="#smallest-reproducer-rule">Smallest-reproducer rule</a></h2>
 <p>When fixing or extending the parser, start with the smallest input that demonstrates the issue.</p>
 <p>That input should usually be one of:</p>
@@ -2444,6 +2556,25 @@ The important places are usually:</p>
 <li>AST or visitor examples</li>
 </ul>
 <p>That keeps the book aligned with the real parser contract.</p>
+<h2 id="boundary-rule"><a class="header" href="#boundary-rule">Boundary rule</a></h2>
+<p>When changing <code>parc</code>, keep the ownership split explicit:</p>
+<ul>
+<li><code>parc</code> owns preprocessing, parsing, extraction, and source artifacts</li>
+<li><code>parc</code> does not own link evidence or Rust lowering</li>
+<li>do not document parser internals as if they were a shared ABI for the rest of
+the pipeline</li>
+</ul>
+<p>If a change makes the source artifact richer, document the richer source
+meaning directly instead of hinting that downstream crates depend on <code>parc</code>
+library internals.</p>
+<h2 id="maintenance-rule"><a class="header" href="#maintenance-rule">Maintenance rule</a></h2>
+<p>The maintenance bar is simple:</p>
+<ol>
+<li>add or tighten the smallest useful test first</li>
+<li>keep public contract docs and examples in the same patch</li>
+<li>prefer deleting stale workflow language over preserving it for history</li>
+<li>do not keep dead compatibility stories in the book</li>
+</ol>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="support-tiers"><a class="header" href="#support-tiers">Support Tiers</a></h1>
 <p>This chapter records a practical support posture for PAC’s public surface.</p>
@@ -2529,6 +2660,12 @@ later compiler stage?”</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="release-checklist"><a class="header" href="#release-checklist">Release Checklist</a></h1>
 <p>This chapter is a pragmatic checklist for documentation and parser changes before a release.</p>
+<p>The important release posture is architectural:</p>
+<ul>
+<li><code>parc</code> releases source/frontend behavior</li>
+<li>it does not release binary or Rust-generation policy</li>
+<li>the tested <code>SourcePackage</code> contract matters more than parser-internal churn</li>
+</ul>
 <h2 id="parser-changes"><a class="header" href="#parser-changes">Parser changes</a></h2>
 <p>Before releasing parser changes:</p>
 <ol>
@@ -2558,6 +2695,22 @@ later compiler stage?”</p>
 <li>update the API contract chapter if the preferred boundary changed</li>
 <li>update stable-usage guidance if downstream posture should change</li>
 </ol>
+<h2 id="artifact-contract-changes"><a class="header" href="#artifact-contract-changes">Artifact contract changes</a></h2>
+<p>Before releasing a <code>SourcePackage</code> shape change:</p>
+<ol>
+<li>confirm the changed field meaning is covered by contract-level tests</li>
+<li>confirm the consuming workflow examples still describe artifact boundaries</li>
+<li>confirm cross-crate composition is still described as tests/examples/harness
+work, not library coupling</li>
+</ol>
+<h2 id="release-gate"><a class="header" href="#release-gate">Release gate</a></h2>
+<p><code>parc</code> is ready to release only when:</p>
+<ul>
+<li><code>make build</code> passes</li>
+<li><code>make test</code> passes</li>
+<li>the book still teaches <code>parc</code> as the source-meaning crate</li>
+<li>unsupported or partial source behavior is still documented honestly</li>
+</ul>
 <h2 id="final-practical-rule"><a class="header" href="#final-practical-rule">Final practical rule</a></h2>
 <p>If a change would force a downstream PAC consumer to rethink how it parses, traverses, or reports
 on source, the book should say so explicitly in the same change.</p>

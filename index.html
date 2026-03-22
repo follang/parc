@@ -35,7 +35,7 @@
             const path_to_root = "";
             const default_light_theme = "navy";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-107bc103.js";
+            window.path_to_searchindex_js = "searchindex-7851b8d0.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-faeb9e03.js"></script>
@@ -180,7 +180,7 @@ parsing, and source-level semantic extraction. It targets C11 and can
 optionally accept GNU and Clang extensions.</p>
 <p>PARC produces a durable <code>SourcePackage</code> contract suitable for downstream
 consumption by linker and codegen stages.</p>
-<h2 id="what-parc-gives-you"><a class="header" href="#what-parc-gives-you">What PARC gives you</a></h2>
+<h2 id="what-parc-owns"><a class="header" href="#what-parc-owns">What PARC Owns</a></h2>
 <ul>
 <li><strong>Preprocessing</strong>: built-in C preprocessor with macro expansion, conditionals, and includes</li>
 <li><strong>Parsing</strong>: C11 parser producing a typed AST under <code>parc::ast</code></li>
@@ -192,7 +192,14 @@ consumption by linker and codegen stages.</p>
 <li>Recursive visitor API under <code>parc::visit</code></li>
 <li>Tree-style debug printer under <code>parc::print</code></li>
 </ul>
-<h2 id="pipeline"><a class="header" href="#pipeline">Pipeline</a></h2>
+<h2 id="what-parc-does-not-own"><a class="header" href="#what-parc-does-not-own">What PARC Does Not Own</a></h2>
+<ul>
+<li>native symbol inspection</li>
+<li>binary validation</li>
+<li>link-plan construction</li>
+<li>Rust lowering or emission</li>
+</ul>
+<h2 id="data-flow"><a class="header" href="#data-flow">Data flow</a></h2>
 <pre><code class="language-text">C source / headers
   -&gt; preprocessor (built-in or gcc/clang)
   -&gt; PARC parser
@@ -200,7 +207,7 @@ consumption by linker and codegen stages.</p>
   -&gt; SourcePackage (frontend contract)
   -&gt; downstream (LINC, GERC)
 </code></pre>
-<h2 id="public-modules"><a class="header" href="#public-modules">Public modules</a></h2>
+<h2 id="module-layout"><a class="header" href="#module-layout">Module layout</a></h2>
 <div class="table-wrapper">
 <table>
 <thead>
@@ -222,6 +229,14 @@ consumption by linker and codegen stages.</p>
 </tbody>
 </table>
 </div>
+<h2 id="artifact-boundary"><a class="header" href="#artifact-boundary">Artifact boundary</a></h2>
+<p><code>parc</code> owns source meaning only.</p>
+<p>The <code>SourcePackage</code> boundary is where <code>parc</code> stops:</p>
+<ul>
+<li><code>parc/src/**</code> must not depend on <code>linc</code> or <code>gec</code></li>
+<li>downstream translation belongs only in tests, examples, or external harnesses</li>
+<li><code>parc</code> does not own link or generation concerns</li>
+</ul>
 <h2 id="typical-use-cases"><a class="header" href="#typical-use-cases">Typical use cases</a></h2>
 <ul>
 <li>Extract function/struct/enum declarations from C headers</li>
