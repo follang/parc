@@ -79,3 +79,73 @@ fn hostile_combo_env_corpus_scans_with_builtin_preprocessor() {
     assert!(result.preprocessed_source.contains("combo_word_t"));
     assert!(result.preprocessed_source.contains("combo_log"));
 }
+
+#[test]
+fn hostile_macro_env_corpus_builtin_and_external_preprocessors_agree_on_items() {
+    let root = corpus_root("macro_env_a");
+    let include_dir = root.join("include");
+    let entry = root.join("entry.h");
+
+    let builtin = scan_headers(
+        &ScanConfig::new()
+            .entry_header(&entry)
+            .include_dir(&include_dir)
+            .with_builtin_preprocessor()
+            .with_resolve_typedefs(),
+    )
+    .expect("builtin macro corpus scan should succeed");
+
+    let external = scan_headers(
+        &ScanConfig::new()
+            .entry_header(&entry)
+            .include_dir(&include_dir)
+            .with_resolve_typedefs(),
+    )
+    .expect("external macro corpus scan should succeed");
+
+    assert!(builtin.package.find_type_alias("corpus_handle_t").is_some());
+    assert!(external.package.find_type_alias("corpus_handle_t").is_some());
+    assert!(builtin.package.find_function("corpus_open").is_some());
+    assert!(external.package.find_function("corpus_open").is_some());
+    assert!(builtin.package.find_function("corpus_format").is_some());
+    assert!(external.package.find_function("corpus_format").is_some());
+    assert!(external.package.item_count() >= builtin.package.item_count());
+    assert!(external.preprocessed_source.contains("corpus_format"));
+}
+
+#[test]
+fn hostile_combo_env_corpus_builtin_and_external_preprocessors_agree_on_items() {
+    let root = corpus_root("combo_env_c");
+    let include_dir = root.join("include");
+    let entry = root.join("entry.h");
+
+    let builtin = scan_headers(
+        &ScanConfig::new()
+            .entry_header(&entry)
+            .include_dir(&include_dir)
+            .with_builtin_preprocessor()
+            .with_resolve_typedefs(),
+    )
+    .expect("builtin combo corpus scan should succeed");
+
+    let external = scan_headers(
+        &ScanConfig::new()
+            .entry_header(&entry)
+            .include_dir(&include_dir)
+            .with_resolve_typedefs(),
+    )
+    .expect("external combo corpus scan should succeed");
+
+    assert!(builtin.package.find_type_alias("combo_word_t").is_some());
+    assert!(external.package.find_type_alias("combo_word_t").is_some());
+    assert!(builtin.package.find_enum("combo_mode").is_some());
+    assert!(external.package.find_enum("combo_mode").is_some());
+    assert!(builtin.package.find_record("combo_config").is_some());
+    assert!(external.package.find_record("combo_config").is_some());
+    assert!(builtin.package.find_function("combo_open").is_some());
+    assert!(external.package.find_function("combo_open").is_some());
+    assert!(builtin.package.find_function("combo_log").is_some());
+    assert!(external.package.find_function("combo_log").is_some());
+    assert!(external.package.item_count() >= builtin.package.item_count());
+    assert!(external.preprocessed_source.contains("combo_log"));
+}
