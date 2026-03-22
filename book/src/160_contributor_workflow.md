@@ -1,6 +1,6 @@
 # Contributor Workflow
 
-This chapter records a practical workflow for changing PAC safely.
+This chapter records a practical workflow for changing `parc` safely.
 
 ## Smallest-reproducer rule
 
@@ -71,3 +71,25 @@ The important places are usually:
 - AST or visitor examples
 
 That keeps the book aligned with the real parser contract.
+
+## Boundary rule
+
+When changing `parc`, keep the ownership split explicit:
+
+- `parc` owns preprocessing, parsing, extraction, and source artifacts
+- `parc` does not own link evidence or Rust lowering
+- do not document parser internals as if they were a shared ABI for the rest of
+  the pipeline
+
+If a change makes the source artifact richer, document the richer source
+meaning directly instead of hinting that downstream crates depend on `parc`
+library internals.
+
+## Maintenance rule
+
+The maintenance bar is simple:
+
+1. add or tighten the smallest useful test first
+2. keep public contract docs and examples in the same patch
+3. prefer deleting stale workflow language over preserving it for history
+4. do not keep dead compatibility stories in the book

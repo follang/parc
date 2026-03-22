@@ -1,5 +1,13 @@
 # Testing
 
+`parc` is the source-meaning crate in the toolchain, so its tests should prove
+three things:
+
+- the frontend accepts or rejects source as intended
+- the extracted `SourcePackage` contract carries the intended meaning
+- cross-package composition can start from `parc` artifacts without relying on
+  `parc` internals
+
 PAC has two broad testing layers:
 
 - direct parser/API tests in `src/tests`
@@ -18,6 +26,19 @@ Those run:
 
 - `cargo build --release`
 - `cargo test`
+
+## Contract tests
+
+Contract tests are the tests a downstream toolchain should treat as the main
+statement of support:
+
+- `parse_api` tests for direct parser entry points
+- extraction tests for declaration/source modeling
+- scan tests for preprocessing and multi-file source intake
+- consumability tests for the `SourcePackage` artifact
+
+If one of those changes meaningfully, the corresponding book chapter should
+change in the same patch.
 
 ## Parse API tests
 
@@ -151,3 +172,31 @@ A practical progression is:
 3. Add an extraction test if the issue is about declaration modeling
 4. Add a scan test if preprocessing or multi-file behavior matters
 5. Add a full-app fixture if the case needs a full filesystem layout
+
+## Cross-crate integration proof
+
+`parc` library tests should not import `linc` or `gerc`.
+
+Cross-crate proof belongs in:
+
+- `linc` tests/examples that ingest serialized or translated `parc` artifacts
+- `gerc` tests/examples that ingest translated source artifacts
+- external harnesses that exercise the full toolchain
+
+That keeps `parc`'s own test suite focused on source meaning while still
+proving the larger pipeline elsewhere.
+
+## What "supported" means
+
+For `parc`, support means:
+
+- the syntax path is covered by parser-facing tests
+- the extracted source meaning is covered by `SourcePackage`-level tests
+- the relevant limitations are documented honestly when behavior is partial or
+  conservative
+
+It does not mean:
+
+- every downstream consumer will accept the artifact unchanged
+- every hostile system header already has perfect preprocessing coverage
+- every parser-internal helper is part of the public contract

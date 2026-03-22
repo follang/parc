@@ -2,6 +2,12 @@
 
 This chapter is a pragmatic checklist for documentation and parser changes before a release.
 
+The important release posture is architectural:
+
+- `parc` releases source/frontend behavior
+- it does not release binary or Rust-generation policy
+- the tested `SourcePackage` contract matters more than parser-internal churn
+
 ## Parser changes
 
 Before releasing parser changes:
@@ -34,6 +40,24 @@ Before releasing changes to the normal integration path:
 1. update the workflow chapter
 2. update the API contract chapter if the preferred boundary changed
 3. update stable-usage guidance if downstream posture should change
+
+## Artifact contract changes
+
+Before releasing a `SourcePackage` shape change:
+
+1. confirm the changed field meaning is covered by contract-level tests
+2. confirm the consuming workflow examples still describe artifact boundaries
+3. confirm cross-crate composition is still described as tests/examples/harness
+   work, not library coupling
+
+## Release gate
+
+`parc` is ready to release only when:
+
+- `make build` passes
+- `make test` passes
+- the book still teaches `parc` as the source-meaning crate
+- unsupported or partial source behavior is still documented honestly
 
 ## Final practical rule
 
