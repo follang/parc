@@ -60,7 +60,7 @@ C source / headers
 
 The `SourcePackage` boundary is where `parc` stops:
 
-- `parc/src/**` must not depend on `linc` or `gec`
+- `parc/src/**` must not depend on `linc` or `gerc`
 - downstream translation belongs only in tests, examples, or external harnesses
 - `parc` does not own link or generation concerns
 

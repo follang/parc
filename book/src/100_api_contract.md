@@ -23,8 +23,8 @@ Downstream consumers should depend on `parc::ir`, not on `parc::ast` directly.
 
 More importantly for this repository:
 
-- `parc` library code must not depend on `linc` or `gec`
-- `linc` and `gec` should not require `parc` as a library dependency in their
+- `parc` library code must not depend on `linc` or `gerc`
+- `linc` and `gerc` should not require `parc` as a library dependency in their
   production code paths
 - integration should happen through PARC-owned artifacts in tests/examples or
   external harnesses

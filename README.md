@@ -9,7 +9,7 @@ In the intended architecture:
 
 - `parc` owns source meaning
 - `linc` owns link and binary meaning
-- `gec` owns Rust lowering and emitted build metadata
+- `gerc` owns Rust lowering and emitted build metadata
 
 Those roles are intentionally separate. `parc` is not a link analyzer and not
 a Rust generator.
@@ -18,7 +18,7 @@ a Rust generator.
 
 `parc` owns its own source model and its own source artifacts.
 
-- `parc/src/**` must not depend on `linc` or `gec`
+- `parc/src/**` must not depend on `linc` or `gerc`
 - cross-package translation belongs only in tests, examples, or external harnesses
 - there is no shared ABI crate
 - there is no backward-compatibility burden for discarded pipeline shapes
@@ -71,12 +71,12 @@ That artifact should contain:
 - partial or unsupported declarations
 
 Cross-package integration belongs outside `parc` library code. If `linc` or
-`gec` wants to consume `parc` output, that translation should happen in:
+`gerc` wants to consume `parc` output, that translation should happen in:
 
 - `linc/tests/**`
 - `linc/examples/**`
-- `gec/tests/**`
-- `gec/examples/**`
+- `gerc/tests/**`
+- `gerc/examples/**`
 - external integration harnesses
 
 Never in `parc/src/**`.

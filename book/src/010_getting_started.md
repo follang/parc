@@ -7,9 +7,9 @@ Read `parc` as the source frontend of the toolchain:
 
 - `parc` owns preprocessing, parsing, extraction, and source diagnostics
 - `linc` owns link and binary evidence
-- `gec` owns Rust lowering and emitted build output
+- `gerc` owns Rust lowering and emitted build output
 
-The boundary rule is strict: `parc/src/**` must not depend on `linc` or `gec`,
+The boundary rule is strict: `parc/src/**` must not depend on `linc` or `gerc`,
 and any cross-package translation belongs only in tests, examples, or external
 harnesses.
 
@@ -134,5 +134,5 @@ It does not own:
 - Rust code generation
 
 In this repository, cross-package composition should not live in `parc` library
-code. `linc` and `gec` should consume `parc` output only from tests, examples,
+code. `linc` and `gerc` should consume `parc` output only from tests, examples,
 or external harnesses.
